@@ -1,6 +1,6 @@
 # Glassweb
 
-A containerized web application featuring a Python FastAPI backend (with CORS enabled) and a static HTML/Nginx frontend, orchestrated using Docker Compose.
+A containerized web application featuring a Python FastAPI backend (with CORS enabled) and a static HTML/Nginx frontend, orchestrated using Docker Compose. Built toward a network request analyzer that fetches pages via headless browser and inspects outgoing tracker requests.
 
 ## Project Structure
 ```text
@@ -19,7 +19,9 @@ glassweb/
 ---
 
 ## What It Does at the Moment
-* **Backend (`/backend`):** Powered by Python, FastAPI, and Uvicorn. Includes CORS middleware and exposes a health-check endpoint (`/health`) returning `{"ok": true}`. Built on a Microsoft Playwright base image.
+* **Backend (`/backend`):** Powered by Python, FastAPI, and Uvicorn. Includes CORS middleware. Built on a Microsoft Playwright base image.
+  * `/health` — health check, returns `{"ok": true}`
+  * `/test-render` — launches headless Chromium, navigates to a test page, and returns its title. Confirms the browser actually runs inside the container.
 * **Frontend (`/frontend`):** Served via Nginx. Loads a static web page that pings the backend service to verify live cross-container communication.
 * **Wiring:** Docker Compose links both containers, mapping the backend to port `8000` and the frontend to port `8080`.
 
@@ -39,6 +41,7 @@ glassweb/
 3. Open your web browser to test:
    * **Frontend Interface:** [http://localhost:8080](http://localhost:8080) (Displays *"backend reachable."*)
    * **Backend Health Check:** [http://localhost:8000/health](http://localhost:8000/health) (Returns `{"ok": true}`)
+   * **Render Check:** [http://localhost:8000/test-render](http://localhost:8000/test-render) (Returns the title of a test page, confirming Chromium runs in-container)
 
 ### Stopping the Application
 To stop the containers, press `Ctrl + C` in your terminal, or run:
