@@ -6,6 +6,8 @@ A containerized web application featuring a Python FastAPI backend (with CORS en
 ```text
 glassweb/
 ├── backend/
+|   ├── data/
+|   |   └── services.json
 │   ├── main.py
 │   └── requirements.txt
 ├── frontend/
@@ -25,6 +27,11 @@ glassweb/
   * `/scan?url=<url>` — launches headless Chromium, navigates to the given URL, and captures every outgoing network request during load. Returns the page title, final URL (post-redirect), request count, and the full list of captured requests (url, resource type, method, whether it's the navigation request itself).
 * **Frontend (`/frontend`):** Served via Nginx. Loads a static web page that pings the backend service to verify live cross-container communication.
 * **Wiring:** Docker Compose links both containers, mapping the backend to port `8000` and the frontend to port `8080`.
+
+---
+
+## Data Sources
+* **Tracker classification** uses the [Disconnect.me Tracking Protection List](https://github.com/disconnectme/disconnect-tracking-protection) (`services.json`), which maps categories → entities → domains for known trackers. Stored locally in `backend/data/`.
 
 ---
 
