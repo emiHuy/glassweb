@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 
 DATA_PATH = Path(__file__).parent / "data" / "services.json"
 
@@ -21,3 +22,14 @@ def load_tracker_data():
                     services_map[domain] = {"entity": entity_name, "category": category_name}
 
     return services_map
+
+def extract_domain(url):
+    return urlparse(url).netloc
+
+def match_domain(hostname, tracker_map):
+    parts = hostname.split(".")
+    for i in range(len(parts)):
+        candidate = ".".join(parts[i:])
+        if candidate in tracker_map:
+            return tracker_map[candidate]
+    return None

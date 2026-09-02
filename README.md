@@ -9,6 +9,7 @@ glassweb/
 |   ├── data/
 |   |   └── services.json
 │   ├── main.py
+│   ├── helpers.py
 │   └── requirements.txt
 ├── frontend/
 │   └── index.html
@@ -22,9 +23,9 @@ glassweb/
 
 ## What It Does at the Moment
 * **Backend (`/backend`):** Powered by Python, FastAPI, and Uvicorn. Includes CORS middleware. Built on a Microsoft Playwright base image.
-  * `/health` — health check, returns `{"ok": true}`
-  * `/test-render` — launches headless Chromium, navigates to a test page, and returns its title. Confirms the browser actually runs inside the container.
-  * `/scan?url=<url>` — launches headless Chromium, navigates to the given URL, and captures every outgoing network request during load. Returns the page title, final URL (post-redirect), request count, and the full list of captured requests (url, resource type, method, whether it's the navigation request itself).
+   * `/health` — health check, returns `{"ok": true}`
+   * `/test-render` — launches headless Chromium, navigates to a test page, and returns its title. Confirms the browser actually runs inside the container.
+   * `/scan?url=<url>` — launches headless Chromium, navigates to the given URL, and captures every outgoing network request during load. Each request is classified against the Disconnect.me tracker dataset (entity + category), with unmatched domains marked `unclassified`. Returns the page title, final URL (post-redirect), request count, and the full list of captured, classified requests.
 * **Frontend (`/frontend`):** Served via Nginx. Loads a static web page that pings the backend service to verify live cross-container communication.
 * **Wiring:** Docker Compose links both containers, mapping the backend to port `8000` and the frontend to port `8080`.
 
@@ -39,6 +40,7 @@ glassweb/
 
 ### Prerequisites
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running on your machine.
+* The `playwright` version in `backend/requirements.txt` must match the base image version in the `Dockerfile` (`mcr.microsoft.com/playwright/python:vX.XX.X-noble`) — a mismatch causes `BrowserType.launch` errors since the browser binaries baked into the image won't match what the Python package expects.
 
 ### Instructions
 1. Open your terminal in the root project directory (`glassweb/`).
@@ -50,10 +52,13 @@ glassweb/
    * **Frontend Interface:** [http://localhost:8080](http://localhost:8080) (Displays *"backend reachable."*)
    * **Backend Health Check:** [http://localhost:8000/health](http://localhost:8000/health) (Returns `{"ok": true}`)
    * **Render Check:** [http://localhost:8000/test-render](http://localhost:8000/test-render) (Returns the title of a test page, confirming Chromium runs in-container)
-   * **Scan:** `http://localhost:8000/scan?url=https://example.com` (Returns captured network requests for the given URL)
+   * **Scan:** `http://localhost:8000/scan?url=https://example.com` (Returns captured, classified network requests for the given URL)
 
 ### Stopping the Application
 To stop the containers, press `Ctrl + C` in your terminal, or run:
 ```bash
 docker compose down
 ```
+
+## Known Limitations
+* Requests that redirect appear as separate entries for each hop, since each hop is captured as its own request. Redirect-chain reconstruction is planned but not yet implemented.

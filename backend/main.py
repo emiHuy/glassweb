@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from playwright.async_api import async_playwright, Request
 
-from helpers import load_tracker_data
+from helpers import load_tracker_data, extract_domain, match_domain
 
 # Windows-only: Playwright needs the Proactor event loop to launch
 # subprocesses (i.e. the browser). Only relevant for local dev —
@@ -65,11 +65,15 @@ async def scan(url: str):
     network_requests = []
 
     def handle_request(req: Request):
+        domain = extract_domain(req.url)
+        classification = match_domain(domain, TRACKER_MAP) or {"entity": None, "category": "unclassified"}
+
         req_info = {
             "url": req.url,
             "resource_type": req.resource_type,
             "method": req.method,
             "is_navigation_request": req.is_navigation_request(),
+            "classification": classification
         }
         network_requests.append(req_info)
 
