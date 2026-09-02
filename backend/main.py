@@ -1,15 +1,17 @@
 import sys
 import asyncio
 
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from playwright.async_api import async_playwright, Request
+
+from helpers import load_tracker_data
+
 # Windows-only: Playwright needs the Proactor event loop to launch
 # subprocesses (i.e. the browser). Only relevant for local dev —
 # Docker runs on Linux, where this distinction doesn't apply.
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from playwright.async_api import async_playwright, Request
 
 app = FastAPI()
 
@@ -21,6 +23,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+TRACKER_MAP = load_tracker_data()
 
 @app.get("/health")
 async def health_check():
@@ -66,7 +70,6 @@ async def scan(url: str):
             "resource_type": req.resource_type,
             "method": req.method,
             "is_navigation_request": req.is_navigation_request(),
-
         }
         network_requests.append(req_info)
 
