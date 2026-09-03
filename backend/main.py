@@ -1,3 +1,5 @@
+"""FastAPI backend: exposes /health, /test-render, and /scan endpoints."""
+
 import sys
 import asyncio
 
@@ -5,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from playwright.async_api import async_playwright, Request
 
-from helpers import load_tracker_data, extract_domain, match_domain, summarize_requests
+from helpers import load_tracker_data, extract_domain, match_domain, summarize_requests, UNCLASSIFIED
 
 # Windows-only: Playwright needs the Proactor event loop to launch
 # subprocesses (i.e. the browser). Only relevant for local dev —
@@ -27,7 +29,7 @@ app.add_middleware(
 TRACKER_MAP = load_tracker_data()
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict:
     return {"ok": True}
 
 @app.get("/test-render")
@@ -54,7 +56,7 @@ async def test_render() -> dict:
         await pw.stop()
 
 @app.get("/scan")
-async def scan(url: str):
+async def scan(url: str) -> dict:
     # Initialize playwright
     pw = await async_playwright().start()
 
@@ -66,7 +68,7 @@ async def scan(url: str):
 
     def handle_request(req: Request):
         domain = extract_domain(req.url)
-        classification = match_domain(domain, TRACKER_MAP) or {"entity": None, "category": "unclassified"}
+        classification = match_domain(domain, TRACKER_MAP) or UNCLASSIFIED
 
         req_info = {
             "url": req.url,
