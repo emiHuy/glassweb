@@ -33,3 +33,19 @@ def match_domain(hostname, tracker_map):
         if candidate in tracker_map:
             return tracker_map[candidate]
     return None
+
+def summarize_requests(network_requests):
+    tracker_count = 0
+    for req in network_requests:
+        if req["classification"]["category"] != "unclassified":
+            tracker_count += 1
+
+    category_counts = {}
+    for req in network_requests:
+        category = req["classification"]["category"]
+        category_counts[category] = category_counts.get(category, 0) + 1
+
+    return {
+        "tracker_count": tracker_count,
+        "category_counts": category_counts
+    }

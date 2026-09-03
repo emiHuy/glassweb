@@ -25,9 +25,14 @@ glassweb/
 * **Backend (`/backend`):** Powered by Python, FastAPI, and Uvicorn. Includes CORS middleware. Built on a Microsoft Playwright base image.
    * `/health` — health check, returns `{"ok": true}`
    * `/test-render` — launches headless Chromium, navigates to a test page, and returns its title. Confirms the browser actually runs inside the container.
-   * `/scan?url=<url>` — launches headless Chromium, navigates to the given URL, and captures every outgoing network request during load. Each request is classified against the Disconnect.me tracker dataset (entity + category), with unmatched domains marked `unclassified`. Returns the page title, final URL (post-redirect), request count, and the full list of captured, classified requests.
+   * `/scan?url=<url>` — launches headless Chromium, navigates to the given URL, and captures every outgoing network request during load. Each request is classified against the Disconnect.me tracker dataset (entity + category), with unmatched domains marked `unclassified`. Returns the page title, final URL (post-redirect), the full list of captured, classified requests, a total tracker count, and a per-category count breakdown.
 * **Frontend (`/frontend`):** Served via Nginx. Loads a static web page that pings the backend service to verify live cross-container communication.
 * **Wiring:** Docker Compose links both containers, mapping the backend to port `8000` and the frontend to port `8080`.
+
+---
+
+## Known Limitations
+* Requests that redirect appear as separate entries for each hop, since each hop is captured as its own request. Redirect-chain reconstruction is planned but not yet implemented.
 
 ---
 
@@ -59,6 +64,3 @@ To stop the containers, press `Ctrl + C` in your terminal, or run:
 ```bash
 docker compose down
 ```
-
-## Known Limitations
-* Requests that redirect appear as separate entries for each hop, since each hop is captured as its own request. Redirect-chain reconstruction is planned but not yet implemented.

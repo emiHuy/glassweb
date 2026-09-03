@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from playwright.async_api import async_playwright, Request
 
-from helpers import load_tracker_data, extract_domain, match_domain
+from helpers import load_tracker_data, extract_domain, match_domain, summarize_requests
 
 # Windows-only: Playwright needs the Proactor event loop to launch
 # subprocesses (i.e. the browser). Only relevant for local dev —
@@ -84,13 +84,15 @@ async def scan(url: str):
         # Navigate to url and return its information
         await page.goto(url)
         title = await page.title()
+        summary = summarize_requests(network_requests)
         
         return {
             "url": url,
             "title": title, 
             "network_requests_count": len(network_requests),
             "network_requests": network_requests,
-            "final_url": page.url # url after redirect (if any)
+            "final_url": page.url, # url after redirect (if any)
+            **summary
         }
 
     except Exception as e:
