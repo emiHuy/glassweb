@@ -1,15 +1,19 @@
+"""FastAPI backend: exposes /health, /test-render, and /scan endpoints."""
+
 import sys
 import asyncio
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from playwright.async_api import async_playwright, Request
+
+from helpers import load_tracker_data, extract_domain, match_domain, summarize_requests, UNCLASSIFIED
 
 # Windows-only: Playwright needs the Proactor event loop to launch
 # subprocesses (i.e. the browser). Only relevant for local dev —
 # Docker runs on Linux, where this distinction doesn't apply.
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from playwright.async_api import async_playwright, Request
 
 app = FastAPI()
 
@@ -22,8 +26,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+TRACKER_MAP = load_tracker_data()
+
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict:
     return {"ok": True}
 
 @app.get("/test-render")
@@ -50,7 +56,7 @@ async def test_render() -> dict:
         await pw.stop()
 
 @app.get("/scan")
-async def scan(url: str):
+async def scan(url: str) -> dict:
     # Initialize playwright
     pw = await async_playwright().start()
 
@@ -61,12 +67,15 @@ async def scan(url: str):
     network_requests = []
 
     def handle_request(req: Request):
+        domain = extract_domain(req.url)
+        classification = match_domain(domain, TRACKER_MAP) or UNCLASSIFIED
+
         req_info = {
             "url": req.url,
             "resource_type": req.resource_type,
             "method": req.method,
             "is_navigation_request": req.is_navigation_request(),
-
+            "classification": classification
         }
         network_requests.append(req_info)
 
@@ -77,13 +86,15 @@ async def scan(url: str):
         # Navigate to url and return its information
         await page.goto(url)
         title = await page.title()
+        summary = summarize_requests(network_requests)
         
         return {
             "url": url,
             "title": title, 
             "network_requests_count": len(network_requests),
             "network_requests": network_requests,
-            "final_url": page.url # url after redirect (if any)
+            "final_url": page.url, # url after redirect (if any)
+            **summary
         }
 
     except Exception as e:
