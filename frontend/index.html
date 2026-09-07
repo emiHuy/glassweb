@@ -159,6 +159,19 @@
                 <button id="scan-btn">Scan</button>
             </div>
             <div class="status-line mono">rendering page · capturing requests · classifying domains</div>
+            <div class="error-block">
+                <div class="error-head">
+                    <div class="error-icon">⚠</div>
+                    <div>
+                        <p class="error-title">Couldn't finish scanning this page.</p>
+                        <p class="error-body">
+                            It may be too large, slow to load, or blocking automated browsers. You can try again, or scan a different URL.
+                        </p>
+                        <button class="error-detail-toggle" id="error-detail-toggle">Technical details</button>
+                        <div class="error-detail mono" id="error-detail"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="empty-note">

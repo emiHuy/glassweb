@@ -7,6 +7,8 @@
     --text-faint: #565F72;
     --accent: #F2A93B;
     --accent-dark: #6B5527;
+    --error: #E14B4B;
+    --error-dark: #3D2020;
 
     --cat-advertising: #F2A93B;
     --cat-analytics: #4FB8C4;
@@ -198,6 +200,71 @@ body {
 .is-scanning .status-line {
     display: block;
     color: var(--accent);
+}
+
+/* ----- Error state ----- */
+.error-block {
+    display: none;
+    margin-top: 18px;
+    padding: 16px 18px;
+    border: 1px solid var(--error-dark);
+    background: rgba(225, 75, 75, 0.06);
+}
+.is-error .error-block {
+    display: block;
+}
+
+.error-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.error-icon {
+    color: var(--error);
+    font-size: 15px;
+    line-height: 1.4;
+    flex-shrink: 0;
+}
+.error-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 4px 0;
+}
+.error-body {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 0;
+}
+.error-detail-toggle {
+    margin-top: 10px;
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-family: monospace;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+}
+.error-detail-toggle:hover {
+    color: var(--text-muted);
+}
+.error-detail {
+    display: none;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.error-detail.open {
+    display: block;
 }
 
 /* ----- Empty state ----- */

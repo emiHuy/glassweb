@@ -88,13 +88,15 @@ async function runScan() {
     try {
         const response = await fetch(`${BASE_URL}/scan?url=${encodeURIComponent(url)}`);
         if (!response.ok) {
-            throw new Error(`Scan failed: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `Scan failed: ${response.status}`);
         }
         const data = await response.json();
 
         renderResults(data);
         setState(STATE.RESULTS);
     } catch (err) {
+        renderError(err);
         setState(STATE.ERROR);
     }  
 }
@@ -220,6 +222,19 @@ function renderResults(data) {
     renderBreakdown(data.category_counts);
 }
 
+/**
+ * Displays an error message to the user.
+ * @param {Error} err - The error object containing the message to display.
+ */
+function renderError(err) {
+    const detailEl = document.getElementById('error-detail');
+    detailEl.textContent = err.message;
+    detailEl.classList.remove('open');
+}
+
 // Global UI trigger bindings
 document.getElementById('info-btn').addEventListener('click', toggleInfo);
 document.getElementById('scan-btn').addEventListener('click', runScan);
+document.getElementById('error-detail-toggle').addEventListener('click', () => {
+    document.getElementById('error-detail').classList.toggle('open')
+});
