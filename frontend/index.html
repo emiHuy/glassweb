@@ -2,23 +2,213 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Phase 0 Skeleton</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glassweb</title>
+    <link href="styles.css" rel="stylesheet">
+    <script src="script.js" defer></script>
 </head>
 <body>
-    <h1>Project Skeleton</h1>
-    <p id="status">Checking backend...</p>
+    <div class="nav-bar mono">
+        <div class="nav-btn-wrapper">
+            <button class="nav-btn" id="info-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.5" r="0.5" fill="currentColor"></circle></svg>
+                About trackers
+            </button>
+            <a class="nav-btn" href="https://github.com/emiHuy/glassweb" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.53-1.33-1.29-1.69-1.29-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.74.4-1.26.73-1.55-2.55-.29-5.23-1.28-5.23-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.67.42.36.78 1.08.78 2.17v3.22c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"></path></svg>
+                GitHub
+            </a>
+        </div>
+    </div>
 
-    <script>
-        fetch('http://localhost:8000/health')
-            .then(response => response.json())
-            .then(data => {
-                if (data.ok) {
-                    document.getElementById('status').innerText = "backend reachable.";
-                }
-            })
-            .catch(error => {
-                document.getElementById('status').innerText = "Backend unreachable!";
-            });
-    </script>
+    <div class="container" id="container">
+        <div class="info-overlay" id="info-overlay">
+            <div class="info-panel">
+                <div class="info-panel-head">
+                    <div class="info-panel-title">Tracker categories</div>
+                    <button class="info-close" id="info-close">×</button>
+                </div>
+                <p class="info-panel-sub">
+                    Every captured request is checked against the Disconnect.me tracker dataset. Matches are grouped into these categories.
+                </p>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-advertising)"></div>
+                    <div>
+                        <div class="info-row-label">Advertising</div>
+                        <div class="info-row-desc">
+                            Domains that display or enable ads and marketing offers, capable of tracking personal information and exposing users to risk even without direct interaction.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-analytics)"></div>
+                    <div>
+                        <div class="info-row-label">Analytics</div>
+                        <div class="info-row-desc">
+                            Trackers that collect user information to build behavioral profiles based on online activity, which can be connected to real names or unique identifiers.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-anti-fraud)"></div>
+                    <div>
+                        <div class="info-row-label">Anti-fraud</div>
+                        <div class="info-row-desc">
+                            Tools whose explicit purpose is to prevent or detect fraud, provided they do not use third-party context data (like IP addresses and user identifiers) for any purpose outside of safety operations.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-consent-managers)"></div>
+                    <div>
+                        <div class="info-row-label">Consent Managers</div>
+                        <div class="info-row-desc">
+                            Services whose explicit and primary purpose is to manage consent preferences, restricted from utilizing third-party context data to enable tracking.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-content)"></div>
+                    <div>
+                        <div class="info-row-label">Content / CDN</div>
+                        <div class="info-row-desc">
+                            Infrastructure serving fonts, scripts, or media. Usually not tracking-focused, but still a third party. 
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-cryptomining)"></div>
+                    <div>
+                        <div class="info-row-label">Cryptomining</div>
+                        <div class="info-row-desc">
+                            Domains that cause the user's browser to mine cryptocurrencies without explicit user opt-in.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-email)"></div>
+                    <div>
+                        <div class="info-row-label">Email</div>
+                        <div class="info-row-desc">
+                            Trackers commonly embedded in emails or webmail interfaces to monitor engagement.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-email-aggressive)"></div>
+                    <div>
+                        <div class="info-row-label">Email (Aggressive)</div>
+                        <div class="info-row-desc">
+                            Email tracker domains serving images or links that, when blocked, may alter expected functionality or break webmail/email rendering.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-fingerprinting-general)"></div>
+                    <div>
+                        <div class="info-row-label">Fingerprinting (General)</div>
+                        <div class="info-row-desc">
+                            Trackers that use browser or device features and properties in unintended ways to identify and track a particular user or device without using cookies.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-fingerprinting-invasive)"></div>
+                    <div>
+                        <div class="info-row-label">Fingerprinting (Invasive)</div>
+                        <div class="info-row-desc">
+                            Trackers that exploit APIs to extract information about a user's computing environment when those APIs were not designed to expose such data.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-social)"></div>
+                    <div>
+                        <div class="info-row-label">Social</div>
+                        <div class="info-row-desc">
+                            Trackers used by social networking services to monitor web browsing activities across third-party websites and apps, even when you aren't logged in or visiting the social network itself.
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-dot" style="background: var(--cat-unclassified)"></div>
+                    <div>
+                        <div class="info-row-label">Unclassified</div>
+                        <div class="info-row-desc">
+                            Not found in the tracker dataset. This means unrecognized, not confirmed safe.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-heading">
+            <div class="main-heading-mark"></div>
+            <h1 class="main-heading-text">Glassweb</h1>
+            <div class="main-heading-sub mono">/ network request analyzer</div>
+        </div>
+
+        <div class="input-container">
+            <div class="scanline"></div>
+            <p class="input-label">
+                Enter a URL. Glassweb renders the page in a real browser, captures every outgoing request it makes while loading, and checks 
+                each one against a known tracker dataset, so you can see who a page talks to before you trust it, not just what it shows you.
+            </p>
+            <div class="input-box">
+                <input type="text" id="url-input" placeholder="https://example.com">
+                <button id="scan-btn">Scan</button>
+            </div>
+            <div class="status-line mono">rendering page · capturing requests · classifying domains</div>
+        </div>
+
+        <div class="empty-note">
+            Nothing scanned yet. Glassweb doesn't store past results — each scan is generated fresh and only exists in this session, in a downloadable file.
+        </div>
+
+        <div class="results" id="results">
+            <div class="report-head">
+                <div class="report-url">
+                    <span id="report-url-base"></span>
+                    <span class="report-url-final" id="report-url-final"></span>
+                </div>
+                <div class="export-links">
+                    <button id="export-json">Save as JSON</button>
+                    <button id="export-pdf">Save as PDF</button>
+                </div>
+            </div>
+            <div class="stat-strip">
+                <div class="stat">
+                    <div class="stat-value" id="stat-requests">0</div>
+                    <div class="stat-label">requests captured</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value accent" id="stat-trackers">0</div>
+                    <div class="stat-label">matched to known trackers</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="stat-categories">0</div>
+                    <div class="stat-label">categories present</div>
+                </div>
+            </div>
+            <div class="breakdown">
+                <div class="breakdown-title">Requests by category</div>
+                <div class="seg-bar" id="seg-bar"></div>
+                <div class="legend" id="legend"></div>
+            </div>
+            <div class="table-title">
+                <span>Captured requests</span>
+                <span class="table-sub mono">sorted by category</span>
+            </div>
+            <div class="req-table" id="req-table">
+                <div class="req-row head">
+                    <div class="req-accent"></div>
+                    <div>domain</div>
+                    <div>category</div>
+                    <div>type</div>
+                    <div class="right-align">method</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
