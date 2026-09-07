@@ -26,6 +26,8 @@ const CATEGORY_INFO = {
 }
 const FALLBACK_CATEGORY = { color: "var(--cat-unclassified)", label: "Unknown" }
 
+let lastScanData = null;  // most recent successful scan's data
+
 /**
  * Toggles the visibility of the tracker information modal overlay.
  * @param {boolean} open - True to open the overlay, false to close it.
@@ -93,6 +95,7 @@ async function runScan() {
         }
         const data = await response.json();
 
+        lastScanData = data;
         renderResults(data);
         setState(STATE.RESULTS);
     } catch (err) {
@@ -232,9 +235,30 @@ function renderError(err) {
     detailEl.classList.remove('open');
 }
 
+/**
+ * Triggers a browser download of the last scan data as a formatted JSON file.
+ * The filename includes the current date (YYYY-MM-DD).
+ */
+function exportJSON() {
+    if (!lastScanData) {
+        return;
+    }
+
+    const blob = new Blob([JSON.stringify(lastScanData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `glassweb-scan-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
 // Global UI trigger bindings
 document.getElementById('info-btn').addEventListener('click', toggleInfo);
 document.getElementById('scan-btn').addEventListener('click', runScan);
 document.getElementById('error-detail-toggle').addEventListener('click', () => {
     document.getElementById('error-detail').classList.toggle('open')
 });
+document.getElementById('export-json').addEventListener('click', exportJSON);
