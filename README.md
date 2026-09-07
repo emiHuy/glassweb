@@ -42,7 +42,6 @@ glassweb/
 * **Large, slow-loading, or anti-bot-defended pages** can exceed Playwright's default 30s navigation timeout.
 * **Dynamic, continuously-active pages** are only captured for the brief window between page load and the browser closing
 * **Repeated domains** currently show as individual rows rather than being grouped for a page that calls the same tracker many times
-* **Failed scans have no dedicated error UI yet.** The frontend sets an error state on a failed request, but no message or retry affordance is shown to the user yet.
 * **Frontend table rendering uses `innerHTML`** with data sourced from the scanned page itself (untrusted input, since the tool is designed to point at arbitrary websites). Not yet hardened against malformed/malicious content.
 ---
 
