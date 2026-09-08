@@ -170,6 +170,10 @@ body {
 .input-box button:hover {
     background: #FFC05E;
 }
+.input-box button:disabled {
+    background: var(--accent-dark);
+    cursor: not-allowed;
+}
 
 /* ----- Scanline sweep ----- */
 .scanline {

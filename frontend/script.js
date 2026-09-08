@@ -86,8 +86,12 @@ function normalizeUrl(url) {
  * Initiates the network scan by fetching analytics data from the backend API.
  */
 async function runScan() {
-    const url = normalizeUrl(document.getElementById('url-input').value);
+    const button = document.getElementById('scan-btn');
+    const input = document.getElementById('url-input');
+    const url = normalizeUrl(input.value);
 
+    button.disabled = true;
+    input.disabled = true;
     setState(STATE.SCANNING);
 
     try {
@@ -104,7 +108,10 @@ async function runScan() {
     } catch (err) {
         renderError(err);
         setState(STATE.ERROR);
-    }  
+    }  finally {
+        button.disabled = false;
+        input.disabled = false;
+    }
 }
 
 /**
