@@ -1,6 +1,13 @@
-"""
-Tracker classification helpers: loads the Disconnect.me dataset, extracts/matches domains against it, 
-and summarizes results.
+""" 
+Utilities for classifying network requests against the Disconnect.me tracker dataset and generating scan summaries and HTML reports. 
+
+This module provides helpers to: 
+- Load and flatten tracker data from the bundled services.json dataset. 
+- Extract hostnames from request URLs. 
+- Match domains, including parent-domain and wildcard-subdomain matches. 
+- Summarize captured requests by tracker status and category. 
+- Map tracker categories to report display styles. 
+- Generate a formatted HTML scan report from collected network data for PDF export.
 """
 
 import html
@@ -171,6 +178,7 @@ FALLBACK_STYLE = {"color": "#B7BAC2", "label": "Unknown"}
 
 
 def load_tracker_data() -> dict:
+    """Load and flatten tracker mapping data from a JSON file."""
     tracker_map = {}
 
     with open(DATA_PATH, "r", encoding="utf-8") as f:
@@ -194,12 +202,12 @@ def load_tracker_data() -> dict:
 
 
 def extract_domain(url: str) -> str:
+    """Extract the network location (domain) from a given URL string."""
     return urlparse(url).netloc
 
 
 def match_domain(hostname: str, tracker_map: dict) -> dict | None:
-    # Checks if resource matches a known tracker.
-    # Tries full hostname, then strips subdomains until a match or nothing left
+    """Check if a hostname matches a known tracker, supporting wildcard subdomains."""
     parts = hostname.split(".")
     for i in range(len(parts)):
         candidate = ".".join(parts[i:])
@@ -209,6 +217,7 @@ def match_domain(hostname: str, tracker_map: dict) -> dict | None:
 
 
 def summarize_requests(network_requests: list) -> dict:
+    """Summarize tracker activity across a list of network requests."""
     # Counts trackers
     tracker_count = 0
     for req in network_requests:
