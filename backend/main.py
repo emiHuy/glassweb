@@ -1,3 +1,4 @@
+# backend/main.py
 """FastAPI backend: exposes /health, /test-render, and /scan endpoints."""
 
 import sys
@@ -9,6 +10,7 @@ from fastapi.responses import Response
 from playwright.async_api import async_playwright, Request
 
 from helpers import load_tracker_data, extract_domain, match_domain, summarize_requests, build_report_html, UNCLASSIFIED
+from config import NAV_TIMEOUT_MS, POST_LOAD_WAIT_MS
 
 # Windows-only: Playwright needs the Proactor event loop to launch
 # subprocesses (i.e. the browser). Only relevant for local dev —
@@ -87,7 +89,9 @@ async def scan(url: str) -> dict:
     page.on("request", handle_request)
 
     try:
-        await page.goto(url)
+        await page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
+        await page.wait_for_timeout(POST_LOAD_WAIT_MS)
+        
         title = await page.title()
         summary = summarize_requests(network_requests)
         

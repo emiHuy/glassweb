@@ -8,6 +8,7 @@ glassweb/
 ├── backend/
 |   ├── data/
 |   |   └── services.json
+│   ├── config.py
 │   ├── helpers.py
 │   ├── main.py
 │   └── requirements.txt
