@@ -38,16 +38,19 @@ function toggleInfo(open) {
 
 // Event listeners for closing the info overlay
 document.getElementById('info-close').addEventListener('click', () => toggleInfo(false));
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        toggleInfo(false);
-    }
-})
 document.getElementById('info-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'info-overlay') {
         toggleInfo(false);
     }
 });
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        toggleInfo(false);
+    } else if (e.key === 'Enter') {
+        runScan();
+    }
+})
 
 /**
  * Updates the UI layout state based on application flow (scanning, results, or error).
@@ -255,10 +258,55 @@ function exportJSON() {
     URL.revokeObjectURL(url);
 }
 
+/**
+ * Requests a PDF export of the latest scan data, creates a temporary local object URL,
+ * and triggers an automatic file download in the browser.
+ *
+ * Sends a POST request with the cached scan data, converts the resulting PDF stream 
+ * into a Blob, and programmatically clicks an anchor element to start the download.
+ *
+ * @async
+ * @function exportPDF
+ * @returns {Promise<void>} Resolves when the download sequence is complete, or 
+ *     returns early if no scan data is currently cached.
+ * @throws {Error} Throws an error if the network response is not OK; caught locally 
+ *     to render the error and update the application state.
+ */
+async function exportPDF() {
+    if (!lastScanData) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${BASE_URL}/export/pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lastScanData)
+        });
+        if (!response.ok) {
+            throw new Error(`PDF export failed: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `glassweb-scan-${new Date().toISOString().slice(0, 10)}.pdf`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        renderError(err);
+        setState(STATE.ERROR);
+    }
+}
+
 // Global UI trigger bindings
 document.getElementById('info-btn').addEventListener('click', toggleInfo);
 document.getElementById('scan-btn').addEventListener('click', runScan);
 document.getElementById('error-detail-toggle').addEventListener('click', () => {
-    document.getElementById('error-detail').classList.toggle('open')
+    document.getElementById('error-detail').classList.toggle('open');
 });
 document.getElementById('export-json').addEventListener('click', exportJSON);
+document.getElementById('export-pdf').addEventListener('click', exportPDF);

@@ -12,6 +12,7 @@ glassweb/
 │   ├── main.py
 │   └── requirements.txt
 ├── frontend/
+|   ├── glassweb-logo.ico
 |   ├── index.html
 |   ├── script.js
 │   └── styles.css
@@ -27,18 +28,22 @@ glassweb/
 * **Backend (`/backend`):** Powered by Python, FastAPI, and Uvicorn. Includes CORS middleware. Built on a Microsoft Playwright base image.
    * `/health` — health check, returns `{"ok": true}`
    * `/test-render` — launches headless Chromium, navigates to a test page, and returns its title. Confirms the browser actually runs inside the container.
-   * `/scan?url=<url>` — launches headless Chromium, navigates to the given URL, and captures every outgoing network request during load. Each request is classified against the Disconnect.me tracker dataset (entity + category), with unmatched domains marked `unclassified`. Returns the page title, final URL (post-redirect), the full list of captured, classified requests, a total tracker count, and a per-category count breakdown.
+   * `/scan?url=<url>` — launches headless Chromium, navigates to the given URL, and captures every outgoing network request during load. Each request is classified against the Disconnect.me tracker dataset with unmatched domains marked `unclassified`. Returns the results.
+   * `/export/pdf` — accepts a completed scan's JSON (no re-scanning), builds a print-friendly HTML report, and renders it to PDF using Playwright's own `page.pdf()`, returned as a downloadable file.
 * **Frontend (`/frontend`):** Served via Nginx. Loads a static web page that pings the backend service to verify live cross-container communication.
-   * A URL input triggers `/scan` and renders the results: a stat strip, a segmented bar + legend showing the category breakdown, and a request table sorted by category.
-   * URLs typed without a scheme (e.g. `example.com`) are automatically normalized to `https://` before scanning, so the "redirected to" indicator only appears for genuine redirects, not missing-prefix false positives.
+   * A URL input triggers `/scan` and renders the results.
+   * URLs typed without a scheme (e.g. `example.com`) are automatically normalized to `https://` before scanning.
    * An "About trackers" panel explains all tracker categories from the dataset, each with its own color and plain-language description.
    * A GitHub link in the header points back to this repo.
+   * A failed scan (e.g. a timeout) shows a plain-language error message with an optional, collapsible technical-details section containing the actual caught error, rather than failing with no visible feedback.
+   * "Save as JSON" downloads the current scan's full result, generated entirely client-side from data already in memory — no extra backend call.
+   * "Save as PDF" sends the current scan's data to `/export/pdf` and downloads the generated report.
 * **Wiring:** Docker Compose links both containers, mapping the backend to port `8000` and the frontend to port `8080`.
 
 ---
 
 ## Known Limitations
-* **Requests that redirect**appear as separate entries for each hop, since each hop is captured as its own request. Redirect-chain reconstruction is planned but not yet implemented.
+* **Requests that redirect** appear as separate entries for each hop, since each hop is captured as its own request. Redirect-chain reconstruction is planned but not yet implemented.
 * **Large, slow-loading, or anti-bot-defended pages** can exceed Playwright's default 30s navigation timeout.
 * **Dynamic, continuously-active pages** are only captured for the brief window between page load and the browser closing
 * **Repeated domains** currently show as individual rows rather than being grouped for a page that calls the same tracker many times
