@@ -39,16 +39,15 @@ glassweb/
    * A failed scan (e.g. a timeout) shows a plain-language error message with an optional, collapsible technical-details section containing the actual caught error, rather than failing with no visible feedback.
    * "Save as JSON" downloads the current scan's full result, generated entirely client-side from data already in memory — no extra backend call.
    * "Save as PDF" sends the current scan's data to `/export/pdf` and downloads the generated report.
-* **Wiring:** Docker Compose links both containers, mapping the backend to port `8000` and the frontend to port `8080`.
+* **Wiring:** Docker Compose links both containers, mapping the backend to port `8000` and the frontend to port `8080`. The backend container is capped at 1GB RAM (`mem_limit` in `docker-compose.yml`), so resource exhaustion fails predictably instead of silently killing the container mid-scan.
 
 ---
 
 ## Known Limitations
 * **Requests that redirect** appear as separate entries for each hop, since each hop is captured as its own request. Redirect-chain reconstruction is planned but not yet implemented.
-* **Large, slow-loading, or anti-bot-defended pages** can exceed Playwright's default 30s navigation timeout.
-* **Dynamic, continuously-active pages** are only captured for the brief window between page load and the browser closing
+* **Large or slow-loading pages** may still exceed the navigation timeout on especially heavy pages. The timeout itself is configurable via `GLASSWEB_NAV_TIMEOUT_MS` (default 45s).
+* **Dynamic, continuously-active pages** (polling, streaming, background calls) are only captured for a fixed post-load observation window (default 3s, configurable via `GLASSWEB_POST_LOAD_WAIT_MS`) before the browser closes — not their full ongoing behavior.
 * **Repeated domains** currently show as individual rows rather than being grouped for a page that calls the same tracker many times
-* **Frontend table rendering uses `innerHTML`** with data sourced from the scanned page itself (untrusted input, since the tool is designed to point at arbitrary websites). Not yet hardened against malformed/malicious content.
 ---
 
 ## Data Sources
