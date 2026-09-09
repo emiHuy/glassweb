@@ -86,8 +86,12 @@ function normalizeUrl(url) {
  * Initiates the network scan by fetching analytics data from the backend API.
  */
 async function runScan() {
-    const url = normalizeUrl(document.getElementById('url-input').value);
+    const button = document.getElementById('scan-btn');
+    const input = document.getElementById('url-input');
+    const url = normalizeUrl(input.value);
 
+    button.disabled = true;
+    input.disabled = true;
     setState(STATE.SCANNING);
 
     try {
@@ -104,7 +108,10 @@ async function runScan() {
     } catch (err) {
         renderError(err);
         setState(STATE.ERROR);
-    }  
+    }  finally {
+        button.disabled = false;
+        input.disabled = false;
+    }
 }
 
 /**
@@ -128,13 +135,12 @@ function renderResults(data) {
      * @param {string} finalUrl - The final redirected URL, if any.
      */
     function renderUrls(scannedUrl, finalUrl) {
-        const base = new URL(scannedUrl).hostname;
-        document.getElementById('report-url-base').textContent = base;
+        document.getElementById('report-url-base').textContent = scannedUrl;
 
         const finalEl = document.getElementById('report-url-final');
 
         if (finalUrl && finalUrl !== scannedUrl) {
-            finalEl.innerHTML = `&rarr; ${finalUrl}`;
+            finalEl.textContent = `→ ${finalUrl}`;
             finalEl.style.display = '';
         } else {
             finalEl.style.display = 'none';
@@ -164,16 +170,38 @@ function renderResults(data) {
 
             const row = document.createElement('div');
             row.className = 'req-row' + (isUnclassified ? ' unclassified' : '');
-            row.innerHTML = `
-                <div class="req-accent" style="background: ${color};"></div>
-                <div class="req-domain">${domain}${entity ? ` <span class="entity">${entity}</span>` : ''}</div>
-                <div class="req-category">
-                    <div class="dot" style="background: ${color};"></div>
-                    ${label}
-                </div>
-                <div class="req-type">${req.resource_type}</div>
-                <div class="req-method">${req.method}</div>
-            `;
+
+            const accent = document.createElement('div');
+            accent.className = 'req-accent';
+            accent.style.background = color;
+
+            const domainEl = document.createElement('div');
+            domainEl.className = 'req-domain';
+            domainEl.textContent = domain;
+            if (entity) {
+                const entitySpan = document.createElement('span');
+                entitySpan.className = 'entity';
+                entitySpan.textContent = ` ${entity}`;
+                domainEl.appendChild(entitySpan);
+            }
+
+            const categoryEl = document.createElement('div');
+            categoryEl.className = 'req-category';
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            dot.style.background = color;
+            categoryEl.appendChild(dot);
+            categoryEl.append(label); // text node, safe
+
+            const typeEl = document.createElement('div');
+            typeEl.className = 'req-type';
+            typeEl.textContent = req.resource_type;
+
+            const methodEl = document.createElement('div');
+            methodEl.className = 'req-method';
+            methodEl.textContent = req.method;
+
+            row.append(accent, domainEl, categoryEl, typeEl, methodEl);
             table.appendChild(row);
         }
     }
@@ -303,7 +331,7 @@ async function exportPDF() {
 }
 
 // Global UI trigger bindings
-document.getElementById('info-btn').addEventListener('click', toggleInfo);
+document.getElementById('info-btn').addEventListener('click', () => toggleInfo(true));
 document.getElementById('scan-btn').addEventListener('click', runScan);
 document.getElementById('error-detail-toggle').addEventListener('click', () => {
     document.getElementById('error-detail').classList.toggle('open');
