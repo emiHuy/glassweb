@@ -17,8 +17,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
+import tldextract
+
 DATA_PATH = Path(__file__).parent / "data" / "services.json"
 UNCLASSIFIED = {"entity": None, "category": "unclassified"}
+
+_extract = tldextract.TLDExtract(suffix_list_urls=())
 
 REPORT_CSS = """
     * {
@@ -217,6 +221,13 @@ def match_domain(hostname: str, tracker_map: dict) -> dict | None:
     return None
 
 
+def classify_party(scanned_url: str, request_url: str) -> str:
+    """Returns 'first-party' or 'third-party' based on registrable domain comparison."""
+    scanned_domain = _extract(scanned_url).registered_domain
+    request_domain = _extract(request_url).registered_domain
+    return "first-party" if scanned_domain == request_domain else "third-party"
+
+
 def summarize_requests(network_requests: list) -> dict:
     """Summarize tracker activity across a list of network requests."""
     # Counts trackers
@@ -231,9 +242,16 @@ def summarize_requests(network_requests: list) -> dict:
         category = req["classification"]["category"]
         category_counts[category] = category_counts.get(category, 0) + 1
 
+    # Counts requests by first-party / third-party
+    party_counts = {}
+    for req in network_requests:
+        party = req["party"]
+        party_counts[party] = party_counts.get(party, 0) + 1
+
     return {
         "tracker_count": tracker_count,
-        "category_counts": category_counts
+        "category_counts": category_counts,
+        "party_counts": party_counts
     }
 
 
@@ -250,6 +268,7 @@ def build_report_html(scan_data: dict) -> str:
     category_counts = scan_data["category_counts"]
     total_requests = scan_data["network_requests_count"]
     tracker_count = scan_data["tracker_count"]
+    third_party_count = scan_data["party_counts"].get("third-party", 0)
 
     real_categories = [c for c in category_counts if c != "unclassified"]
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d, %H:%M UTC")
@@ -282,6 +301,7 @@ def build_report_html(scan_data: dict) -> str:
         <tr class="{row_class}">
             <td><span class="domain">{domain}</span>{entity_html}</td>
             <td><div class="cat-cell"><div class="dot" style="background:{style["color"]};"></div>{html.escape(style["label"])}</div></td>
+            <td class="type-cell">{html.escape('First' if req['party'] == 'first-party' else 'Third')}</td>
             <td class="type-cell">{html.escape(req["resource_type"])}</td>
             <td class="method-cell">{html.escape(req["method"])}</td>
         </tr>""")
@@ -303,6 +323,7 @@ def build_report_html(scan_data: dict) -> str:
             <div class="stat"><div class="stat-num">{total_requests}</div><div class="stat-label">requests captured</div></div>
             <div class="stat"><div class="stat-num accent">{tracker_count}</div><div class="stat-label">matched to known trackers</div></div>
             <div class="stat"><div class="stat-num">{len(real_categories)}</div><div class="stat-label">categories present</div></div>
+            <div class="stat"><div class="stat-num">{third_party_count}</div><div class="stat-label">third-party requests</div></div>
         </div>
         <div class="breakdown">
             <div class="section-title">Requests by category</div>
@@ -311,7 +332,7 @@ def build_report_html(scan_data: dict) -> str:
         </div>
         <div class="section-title">Captured requests</div>
         <table>
-            <thead><tr><th>Domain</th><th>Category</th><th>Type</th><th>Method</th></tr></thead>
+            <thead><tr><th>Domain</th><th>Category</th><th>Party</th><th>Type</th><th>Method</th></tr></thead>
             <tbody>{''.join(rows)}</tbody>
         </table>
         <div class="footnote">

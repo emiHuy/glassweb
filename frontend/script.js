@@ -167,6 +167,7 @@ function renderResults(data) {
             const isUnclassified = req.classification.category === "unclassified";
             const domain = new URL(req.url).hostname;
             const entity = req.classification.entity;
+            const partyLabel = req.party === "first-party" ? "First" : "Third";
 
             const row = document.createElement('div');
             row.className = 'req-row' + (isUnclassified ? ' unclassified' : '');
@@ -193,6 +194,10 @@ function renderResults(data) {
             categoryEl.appendChild(dot);
             categoryEl.append(label); // text node, safe
 
+            const partyEl = document.createElement('div');
+            partyEl.className = 'req-party';
+            partyEl.textContent = partyLabel;
+
             const typeEl = document.createElement('div');
             typeEl.className = 'req-type';
             typeEl.textContent = req.resource_type;
@@ -201,7 +206,7 @@ function renderResults(data) {
             methodEl.className = 'req-method';
             methodEl.textContent = req.method;
 
-            row.append(accent, domainEl, categoryEl, typeEl, methodEl);
+            row.append(accent, domainEl, categoryEl, partyEl, typeEl, methodEl);
             table.appendChild(row);
         }
     }
@@ -215,6 +220,8 @@ function renderResults(data) {
 
         const realCategories = Object.keys(data.category_counts).filter(cat => cat !== "unclassified");
         document.getElementById('stat-categories').textContent = realCategories.length;
+
+        document.getElementById('stat-third-party').textContent = data.party_counts["third-party"] || 0;
     }
 
     /**
