@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from playwright.async_api import async_playwright, Request
 
-from helpers import load_tracker_data, extract_domain, match_domain, summarize_requests, build_report_html, UNCLASSIFIED
+from helpers import load_tracker_data, extract_domain, match_domain, classify_party, summarize_requests, build_report_html, UNCLASSIFIED
 from config import NAV_TIMEOUT_MS, POST_LOAD_WAIT_MS
 
 # Windows-only: Playwright needs the Proactor event loop to launch
@@ -81,7 +81,7 @@ async def scan(url: str) -> dict:
             "resource_type": req.resource_type,
             "method": req.method,
             "is_navigation_request": req.is_navigation_request(),
-            "classification": classification
+            "classification": classification,
         }
         network_requests.append(req_info)
 
@@ -91,7 +91,14 @@ async def scan(url: str) -> dict:
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
         await page.wait_for_timeout(POST_LOAD_WAIT_MS)
+
+        page.remove_listener("request", handle_request)
         
+        final_url = page.url
+        
+        for req in network_requests:
+            req["party"] = classify_party(final_url, req["url"])
+
         title = await page.title()
         summary = summarize_requests(network_requests)
         
@@ -100,7 +107,7 @@ async def scan(url: str) -> dict:
             "title": title, 
             "network_requests_count": len(network_requests),
             "network_requests": network_requests,
-            "final_url": page.url,  # Captures final URL in case of redirects
+            "final_url": final_url,  # Captures final URL in case of redirects
             **summary
         }
 
