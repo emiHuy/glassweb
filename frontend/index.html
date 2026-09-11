@@ -213,6 +213,28 @@
                 <div class="seg-bar" id="seg-bar"></div>
                 <div class="legend" id="legend"></div>
             </div>
+            <div class="filter-bar" id="filter-bar">
+               <input id="filter-search" type="text" placeholder="Search">
+               <div class="filter-separator"></div>
+               <div class="filter" data-group="category">
+                    <button class="filter-btn" data-toggle="category">Category</button>
+                    <div class="filter-panel" id="category-filters" data-panel="category"></div>
+               </div>
+               <div class="filter" data-group="party">
+                    <button class="filter-btn" data-toggle="party">Party</button>
+                    <div class="filter-panel" data-panel="party"></div>
+               </div>
+               <div class="filter" data-group="type">
+                    <button class="filter-btn" data-toggle="type">Type</button>
+                    <div class="filter-panel" data-panel="type"></div>
+               </div>
+               <div class="filter" data-group="method">
+                    <button class="filter-btn" data-toggle="method">Method</button>
+                    <div class="filter-panel" data-panel="method"></div>
+               </div>
+               <div class="filter-separator"></div>
+               <button class="filter-clear-btn" id="filter-clear-btn">Clear</button>
+            </div>
             <div class="table-title">
                 <span>Captured requests</span>
                 <span class="table-sub mono">sorted by category</span>

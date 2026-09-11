@@ -403,6 +403,120 @@ body {
     color: var(--text);
 }
 
+/* table filter bar */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 6px 0;
+    background: transparent;
+    margin-bottom: 15px;
+    width: 100%;
+    position: relative;
+}
+.filter-bar input {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: monospace;
+    font-size: 12px;
+    padding: 3px 5px;
+    border-radius: 2px;
+    height: 22px;
+    width: 100%;
+}
+.filter-bar input::placeholder {
+    color: var(--text-faint);
+}
+.filter-separator {
+    width: 1px;
+    height: 20px;
+    background: var(--line);
+}
+.filter {
+    position: relative;
+}
+.filter-btn {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text-muted);
+    font-family: monospace;
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 2px;
+    height: 22px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.filter-btn:hover {
+    color: var(--text);
+    border-color: var(--text-faint);
+}
+.filter-btn.active {
+    color: var(--accent);
+    border-color: var(--accent-dark);
+}
+.filter-btn .n {
+    color: var(--accent);
+    font-weight: 600;
+}
+.filter-panel {
+    display: none;
+    position: absolute;
+    top: 26px;
+    left: 0;
+    z-index: 10;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 6px;
+    min-width: 120px;
+    box-shadow: 0 4px 12px rgba(0 ,0, 0, 0.4);
+}
+.filter-panel.open {
+    display: block;
+}
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 2px;
+}
+.filter-item:hover {
+    background: #1A2333;
+}
+.filter-item input {
+    width: auto;
+    height: auto;
+    margin: 0;
+}
+.filter-clear-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--text-muted);
+    font-family: monospace;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    cursor: pointer;
+    height: 22px;
+    white-space: nowrap;
+}
+.filter-clear-btn:hover {
+    border-color: var(--text-faint);
+    color: var(--text);
+}
+
+
 /* request table */
 .table-title {
     font-size: 13px;
