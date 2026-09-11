@@ -26,8 +26,28 @@ const CATEGORY_INFO = {
 }
 const FALLBACK_CATEGORY = { color: "var(--cat-unclassified)", label: "Unknown" }
 
+const FILTER_GROUPS = {
+    category: { selected: new Set(), labels: {} },
+    party: { selected: new Set(), labels: { "first-party": "First-party", "third-party": "Third-party" } },
+    method: { selected: new Set(), labels: {} },
+    type: { selected: new Set(), labels: {} }
+};
+
+// Table sort state. Defaults to the original category sort for continuity.
+let sortKey = 'classification.category';
+let sortDir = 1;
+
 let lastScanData = null;  // most recent successful scan's data
 
+/**
+ * Resolves metadata (color and label) for a given category key with fallback support.
+ * @param {string} category - Category identifier.
+ * @returns {Object} Category style/label mapping object.
+ */
+function getCategoryInfo(category) {
+    return CATEGORY_INFO[category] || FALLBACK_CATEGORY;
+}
+    
 /**
  * Toggles the visibility of the tracker information modal overlay.
  * @param {boolean} open - True to open the overlay, false to close it.
@@ -115,20 +135,220 @@ async function runScan() {
 }
 
 /**
+ * Populates the network request table, sorted alphabetically by tracker category.
+ * @param {Array<Object>} networkRequests - List of captured HTTP requests.
+ */
+function renderRequestTable(networkRequests) {
+    const table = document.getElementById('req-table');
+    
+    // Clear existing rows except the table header
+    table.querySelectorAll('.req-row:not(.head)').forEach(row => row.remove());
+    
+    for (const req of networkRequests) {
+        const { color, label } = getCategoryInfo(req.classification.category);
+        const isUnclassified = req.classification.category === "unclassified";
+        const domain = new URL(req.url).hostname;
+        const entity = req.classification.entity;
+        const partyLabel = req.party === "first-party" ? "First" : "Third";
+
+        const row = document.createElement('div');
+        row.className = 'req-row' + (isUnclassified ? ' unclassified' : '');
+
+        const accent = document.createElement('div');
+        accent.className = 'req-accent';
+        accent.style.background = color;
+
+        const domainEl = document.createElement('div');
+        domainEl.className = 'req-domain';
+        domainEl.textContent = domain;
+        if (entity) {
+            const entitySpan = document.createElement('span');
+            entitySpan.className = 'entity';
+            entitySpan.textContent = ` ${entity}`;
+            domainEl.appendChild(entitySpan);
+        }
+
+        const categoryEl = document.createElement('div');
+        categoryEl.className = 'req-category';
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.style.background = color;
+        categoryEl.appendChild(dot);
+        categoryEl.append(label); // text node, safe
+
+        const partyEl = document.createElement('div');
+        partyEl.className = 'req-party';
+        partyEl.textContent = partyLabel;
+
+        const typeEl = document.createElement('div');
+        typeEl.className = 'req-type';
+        typeEl.textContent = req.resource_type;
+
+        const methodEl = document.createElement('div');
+        methodEl.className = 'req-method';
+        methodEl.textContent = req.method;
+
+        row.append(accent, domainEl, categoryEl, partyEl, typeEl, methodEl);
+        table.appendChild(row);
+    }
+}
+
+/**
+ * Derives available filter options from the current scan's requests.
+ * Category/method/type are data-driven since they vary per scan;
+ * party/tracker are always both possible values regardless of data.
+ * @param {Array<Object>} requests - The full, unfiltered scan's requests.
+ * @returns {Object} Map of group name -> array of available values.
+ */
+function buildFilterOptions(requests) {
+    const categories = new Set();
+    const methods = new Set();
+    const types = new Set();
+ 
+    requests.forEach(req => {
+        categories.add(req.classification.category);
+        methods.add(req.method);
+        types.add(req.resource_type);
+    });
+ 
+    return {
+        category: [...categories],
+        party: ["first-party", "third-party"],
+        tracker: ["tracker", "nontracker"],
+        method: [...methods],
+        type: [...types]
+    };
+}
+
+/**
+ * Rebuilds each filter dropdown's checklist based on the current scan's data,
+ * and resets all filter selections. Called once per successful scan.
+ * @param {Array<Object>} requests - The full, unfiltered scan's requests.
+ */
+function buildFilterPanels(requests) {
+    const options = buildFilterOptions(requests);
+ 
+    Object.keys(FILTER_GROUPS).forEach(groupKey => {
+        const group = FILTER_GROUPS[groupKey];
+        group.selected = new Set(options[groupKey]);
+ 
+        const panel = document.querySelector(`[data-panel="${groupKey}"]`);
+        panel.innerHTML = '';
+ 
+        options[groupKey].forEach(val => {
+            const item = document.createElement('label');
+            item.className = 'filter-item';
+ 
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = val;
+            cb.checked = true;
+            cb.addEventListener('change', () => {
+                if (cb.checked) group.selected.add(val); else group.selected.delete(val);
+                updateFilterButtonLabel(groupKey);
+                applyFiltersAndRender();
+            });
+ 
+            const label = document.createElement('span');
+            label.textContent = group.labels[val] || (val === 'unclassified' ? 'Unclassified' : val);
+ 
+            item.append(cb, label);
+            panel.appendChild(item);
+        });
+ 
+        updateFilterButtonLabel(groupKey);
+    });
+}
+
+/**
+ * Updates a filter dropdown button's label to show a selection count badge
+ * when that group has active filters.
+ * @param {string} groupKey - One of the FILTER_GROUPS keys.
+ */
+function updateFilterButtonLabel(groupKey) {
+    const group = FILTER_GROUPS[groupKey];
+    const btn = document.querySelector(`[data-toggle="${groupKey}"]`);
+    const base = { category: 'Category', party: 'Party', method: 'Method', type: 'Type' }[groupKey];
+    const totalOptions = document.querySelectorAll(`[data-panel="${groupKey}"] input[type="checkbox"]`).length;
+ 
+    btn.innerHTML = '';
+    btn.append(base);
+    if (group.selected.size < totalOptions) {
+        const count = document.createElement('span');
+        count.className = 'n';
+        count.textContent = ` ${group.selected.size}`;
+        btn.appendChild(count);
+        btn.classList.add('active');
+    } else {
+        btn.classList.remove('active');
+    }
+}
+
+/**
+ * Opens the given filter group's dropdown panel, closing any others.
+ * @param {string} groupKey - One of the FILTER_GROUPS keys.
+ */
+function toggleFilterPanel(groupKey) {
+    document.querySelectorAll('.filter-dd-panel').forEach(p => {
+        if (p.getAttribute('data-panel') !== groupKey) p.classList.remove('open');
+    });
+    document.querySelector(`[data-panel="${groupKey}"]`).classList.toggle('open');
+}
+
+/**
+ * Reads a possibly-nested field off a request object, e.g. "classification.category".
+ * @param {Object} req - A network request object.
+ * @param {string} key - Dot-delimited field path.
+ * @returns {*} The resolved value, or undefined if any segment is missing.
+ */
+function getSortValue(req, key) {
+    return key.split('.').reduce((obj, k) => obj?.[k], req);
+}
+
+/**
+ * Sorts a request array by the current sortKey/sortDir, without mutating the input.
+ * @param {Array<Object>} requests - Requests to sort.
+ * @returns {Array<Object>} A new, sorted array.
+ */
+function applySort(requests) {
+    return [...requests].sort((a, b) => {
+        const av = getSortValue(a, sortKey) ?? '';
+        const bv = getSortValue(b, sortKey) ?? '';
+        return String(av).localeCompare(String(bv)) * sortDir;
+    });
+}
+
+/**
+ * Filters lastScanData's requests against all active filter groups + search,
+ * applies the current sort, and re-renders the table. Stats and the category
+ * breakdown always reflect the full, unfiltered scan and are not affected.
+ */
+function applyFiltersAndRender() {
+    if (!lastScanData) return;
+ 
+    const search = document.getElementById('filter-search').value.toLowerCase();
+    const { category, party, method, type } = FILTER_GROUPS;
+ 
+    let filtered = lastScanData.network_requests.filter(req => {
+        const domain = new URL(req.url).hostname.toLowerCase();
+        const entity = (req.classification.entity || '').toLowerCase();
+        if (search && !domain.includes(search) && !entity.includes(search)) return false;
+        if (!category.selected.has(req.classification.category)) return false;
+        if (!party.selected.has(req.party)) return false;
+        if (!method.selected.has(req.method)) return false;
+        if (!type.selected.has(req.resource_type)) return false;
+        return true;
+    });
+ 
+    filtered = applySort(filtered);
+    renderRequestTable(filtered);
+}
+
+/**
  * Renders all components of the analysis results report using API response data.
  * @param {Object} data - The complete scan results payload from the backend.
  */
 function renderResults(data) {
-    
-    /**
-     * Resolves metadata (color and label) for a given category key with fallback support.
-     * @param {string} category - Category identifier.
-     * @returns {Object} Category style/label mapping object.
-     */
-    function getCategoryInfo(category) {
-        return CATEGORY_INFO[category] || FALLBACK_CATEGORY;
-    }
-    
     /**
      * Renders the base scanned domain and redirect URL details.
      * @param {string} scannedUrl - The initially requested URL.
@@ -144,70 +364,6 @@ function renderResults(data) {
             finalEl.style.display = '';
         } else {
             finalEl.style.display = 'none';
-        }
-    }
-
-    /**
-     * Populates the network request table, sorted alphabetically by tracker category.
-     * @param {Array<Object>} networkRequests - List of captured HTTP requests.
-     */
-    function renderRequestTable(networkRequests) {
-        const table = document.getElementById('req-table');
-        
-        // Clear existing rows except the table header
-        table.querySelectorAll('.req-row:not(.head)').forEach(row => row.remove());
-    
-        // Sort requests alphabetically by classification category
-        const sortedRequests = [...networkRequests].sort((a, b) => {
-            return a.classification.category.localeCompare(b.classification.category)
-        });
-        
-        for (const req of sortedRequests) {
-            const { color, label } = getCategoryInfo(req.classification.category);
-            const isUnclassified = req.classification.category === "unclassified";
-            const domain = new URL(req.url).hostname;
-            const entity = req.classification.entity;
-            const partyLabel = req.party === "first-party" ? "First" : "Third";
-
-            const row = document.createElement('div');
-            row.className = 'req-row' + (isUnclassified ? ' unclassified' : '');
-
-            const accent = document.createElement('div');
-            accent.className = 'req-accent';
-            accent.style.background = color;
-
-            const domainEl = document.createElement('div');
-            domainEl.className = 'req-domain';
-            domainEl.textContent = domain;
-            if (entity) {
-                const entitySpan = document.createElement('span');
-                entitySpan.className = 'entity';
-                entitySpan.textContent = ` ${entity}`;
-                domainEl.appendChild(entitySpan);
-            }
-
-            const categoryEl = document.createElement('div');
-            categoryEl.className = 'req-category';
-            const dot = document.createElement('div');
-            dot.className = 'dot';
-            dot.style.background = color;
-            categoryEl.appendChild(dot);
-            categoryEl.append(label); // text node, safe
-
-            const partyEl = document.createElement('div');
-            partyEl.className = 'req-party';
-            partyEl.textContent = partyLabel;
-
-            const typeEl = document.createElement('div');
-            typeEl.className = 'req-type';
-            typeEl.textContent = req.resource_type;
-
-            const methodEl = document.createElement('div');
-            methodEl.className = 'req-method';
-            methodEl.textContent = req.method;
-
-            row.append(accent, domainEl, categoryEl, partyEl, typeEl, methodEl);
-            table.appendChild(row);
         }
     }
 
@@ -258,7 +414,10 @@ function renderResults(data) {
 
     // Execute all sub-rendering pipelines
     renderUrls(data.url, data.final_url);
-    renderRequestTable(data.network_requests);
+    buildFilterPanels(data.network_requests);
+    sortKey = 'classification.category';
+    sortDir = 1;
+    applyFiltersAndRender();
     renderStats();
     renderBreakdown(data.category_counts);
 }
@@ -336,6 +495,33 @@ async function exportPDF() {
         setState(STATE.ERROR);
     }
 }
+
+// --- Filter bar wiring ---
+document.getElementById('filter-search').addEventListener('input', applyFiltersAndRender);
+document.getElementById('filter-clear-btn').addEventListener('click', () => {
+    document.getElementById('filter-search').value = '';
+    buildFilterPanels(lastScanData.network_requests);
+    sortKey = 'classification.category';
+    sortDir = 1;
+    applyFiltersAndRender();
+});
+document.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFilterPanel(btn.getAttribute('data-toggle'));
+    });
+});
+document.addEventListener('click', () => {
+    document.querySelectorAll('.filter-panel').forEach(p => p.classList.remove('open'));
+});
+document.getElementById('filter-bar').addEventListener('click', (e) => e.stopPropagation());
+ 
+document.getElementById('req-table').addEventListener('click', (e) => {
+    const key = e.target.closest('[data-sort]')?.getAttribute('data-sort');
+    if (!key) return;
+    if (sortKey === key) { sortDir *= -1; } else { sortKey = key; sortDir = 1; }
+    applyFiltersAndRender();
+});
 
 // Global UI trigger bindings
 document.getElementById('info-btn').addEventListener('click', () => toggleInfo(true));
