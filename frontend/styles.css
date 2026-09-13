@@ -403,6 +403,33 @@ body {
     color: var(--text);
 }
 
+/* entity summary */
+.entity-table {
+    border-top: 1px solid var(--line);
+}
+.entity-row {
+    display: grid;
+    grid-template-columns: 1fr 90px 90px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+}
+.entity-row.head {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    padding-bottom: 8px;
+}
+.entity-row .name {
+    font-family: monospace;
+    color: var(--text);
+}
+.entity-row .count {
+    font-family: monospace;
+    color: var(--text-muted);
+    text-align: right;
+}
+
 /* table filter bar */
 .filter-bar {
     display: flex;
