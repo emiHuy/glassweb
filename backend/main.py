@@ -1,5 +1,5 @@
 # backend/main.py
-"""FastAPI backend: exposes /health, /test-render, and /scan endpoints."""
+"""FastAPI backend: exposes endpoints."""
 
 import sys
 import asyncio

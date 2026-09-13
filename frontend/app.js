@@ -1,16 +1,9 @@
 // frontend/app.js
+
 /**
  * @file Application controller for Glassweb's frontend.
- *
- * Owns all mutable state: the current scan's data (lastScanData), active
- * filter selections and their available options (FILTER_GROUPS), the table's
- * sort order (sortKey/sortDir), and the UI's layout state (scanning/results/
- * error, via setState). Handles the backend calls (runScan, exportPDF) and
- * all DOM event wiring.
- *
- * This is the only module that imports from render.js. render.js itself
- * never imports from here and never touches this file's state directly —
- * it only receives already-computed values as function arguments.
+ * 
+ * Owns application state, backend calls, UI state, and DOM event wiring.
  */
 
 import {

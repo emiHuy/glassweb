@@ -1,17 +1,9 @@
 // frontend/render.js
+
 /**
  * @file Pure rendering layer for the Glassweb report view.
- *
- * Every exported function here takes already-resolved data as arguments and
- * produces DOM — nothing in this file reads or mutates application state
- * (scan data, active filters, sort order, etc.). That state lives entirely
- * in app.js, which is the only module allowed to import from here.
- *
- * Contract for anyone extending this file: if a function needs to know
- * *why* the data looks the way it does (which filters are active, what's
- * currently selected, what the sort order is), that's a sign the logic
- * belongs in app.js instead — compute it there and pass the result in.
- */
+ * Exported functions take resolved data and produce DOM only.
+ * */
 
 const CATEGORY_INFO = {
     "Advertising": { color: "var(--cat-advertising)", label: "Advertising" },
@@ -36,6 +28,69 @@ const FALLBACK_CATEGORY = { color: "var(--cat-unclassified)", label: "Unknown" }
  */
 function getCategoryInfo(category) {
     return CATEGORY_INFO[category] || FALLBACK_CATEGORY;
+}
+
+/**
+ * Renders the base scanned domain and redirect URL details.
+ * @param {string} scannedUrl - The initially requested URL.
+ * @param {string} finalUrl - The final redirected URL, if any.
+ */
+export function renderUrls(scannedUrl, finalUrl) {
+    document.getElementById('report-url-base').textContent = scannedUrl;
+
+    const finalEl = document.getElementById('report-url-final');
+
+    if (finalUrl && finalUrl !== scannedUrl) {
+        finalEl.textContent = `→ ${finalUrl}`;
+        finalEl.style.display = '';
+    } else {
+        finalEl.style.display = 'none';
+    }
+}
+
+/**
+ * Updates header metrics displaying total requests, trackers, and active categories.
+ */
+export function renderStats(data) {
+    document.getElementById('stat-requests').textContent = data.network_requests_count;
+    document.getElementById('stat-trackers').textContent = data.tracker_count;
+
+    const realCategories = Object.keys(data.category_counts).filter(cat => cat !== "unclassified");
+    document.getElementById('stat-categories').textContent = realCategories.length;
+
+    document.getElementById('stat-third-party').textContent = data.party_counts["third-party"] || 0;
+}
+
+/**
+ * Renders the proportional multi-segment breakdown bar and legend items.
+ * @param {Object} categoryCounts - Dictionary of category counts.
+ */
+export function renderBreakdown(categoryCounts) {
+    const segBar = document.getElementById('seg-bar');
+    const legend = document.getElementById('legend');
+    
+    segBar.innerHTML = '';
+    legend.innerHTML = '';
+
+    const total = Object.values(categoryCounts).reduce((sum, n) => sum + n, 0);
+
+    const entries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
+
+    for (const [category, count] of entries) {
+        const { color, label } = getCategoryInfo(category);
+        const percent = total > 0 ? (count / total) * 100 : 0;
+
+        const seg = document.createElement('div');
+        seg.className = 'seg';
+        seg.style.width = `${percent}%`;
+        seg.style.background = color;
+        segBar.appendChild(seg);
+
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `<div class="legend-dot" style="background: ${color};"></div>${label} <span class="legend-count">${count}</span>`;
+        legend.appendChild(item);
+    }
 }
 
 /**
@@ -129,7 +184,6 @@ export function renderRequestTable(networkRequests) {
     }
 }
 
-
 /**
  * Renders a table of tracker entities by reach (domain and request counts),
  * in the order provided by the backend (pre-sorted by request count,
@@ -168,69 +222,6 @@ export function renderEntitySummary(entityCounts) {
 
         row.append(nameEl, domainsEl, requestsEl);
         table.appendChild(row);
-    }
-}
-
-/**
- * Renders the base scanned domain and redirect URL details.
- * @param {string} scannedUrl - The initially requested URL.
- * @param {string} finalUrl - The final redirected URL, if any.
- */
-export function renderUrls(scannedUrl, finalUrl) {
-    document.getElementById('report-url-base').textContent = scannedUrl;
-
-    const finalEl = document.getElementById('report-url-final');
-
-    if (finalUrl && finalUrl !== scannedUrl) {
-        finalEl.textContent = `→ ${finalUrl}`;
-        finalEl.style.display = '';
-    } else {
-        finalEl.style.display = 'none';
-    }
-}
-
-/**
- * Updates header metrics displaying total requests, trackers, and active categories.
- */
-export function renderStats(data) {
-    document.getElementById('stat-requests').textContent = data.network_requests_count;
-    document.getElementById('stat-trackers').textContent = data.tracker_count;
-
-    const realCategories = Object.keys(data.category_counts).filter(cat => cat !== "unclassified");
-    document.getElementById('stat-categories').textContent = realCategories.length;
-
-    document.getElementById('stat-third-party').textContent = data.party_counts["third-party"] || 0;
-}
-
-/**
- * Renders the proportional multi-segment breakdown bar and legend items.
- * @param {Object} categoryCounts - Dictionary of category counts.
- */
-export function renderBreakdown(categoryCounts) {
-    const segBar = document.getElementById('seg-bar');
-    const legend = document.getElementById('legend');
-    
-    segBar.innerHTML = '';
-    legend.innerHTML = '';
-
-    const total = Object.values(categoryCounts).reduce((sum, n) => sum + n, 0);
-
-    const entries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
-
-    for (const [category, count] of entries) {
-        const { color, label } = getCategoryInfo(category);
-        const percent = total > 0 ? (count / total) * 100 : 0;
-
-        const seg = document.createElement('div');
-        seg.className = 'seg';
-        seg.style.width = `${percent}%`;
-        seg.style.background = color;
-        segBar.appendChild(seg);
-
-        const item = document.createElement('div');
-        item.className = 'legend-item';
-        item.innerHTML = `<div class="legend-dot" style="background: ${color};"></div>${label} <span class="legend-count">${count}</span>`;
-        legend.appendChild(item);
     }
 }
 
