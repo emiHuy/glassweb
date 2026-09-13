@@ -194,6 +194,47 @@ function renderRequestTable(networkRequests) {
 }
 
 /**
+ * Renders a table of tracker entities by reach (domain and request counts),
+ * in the order provided by the backend (pre-sorted by request count,
+ * descending). Hides the section entirely if empty.
+ * @param {Object} entityCounts - Map of entity name -> {domains, requests}.
+ */
+function renderEntitySummary(entityCounts) {
+    const table = document.getElementById('entity-table');
+
+    // Clear existing rows except the header
+    table.querySelectorAll('.entity-row:not(.head)').forEach(row => row.remove());
+
+    const entries = Object.entries(entityCounts);
+
+    if (entries.length === 0) {
+        table.style.display = 'none';
+        return;
+    }
+    table.style.display = '';
+
+    for (const [entity, { domains, requests }] of entries) {
+        const row = document.createElement('div');
+        row.className = 'entity-row';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'name';
+        nameEl.textContent = entity;
+
+        const domainsEl = document.createElement('div');
+        domainsEl.className = 'count';
+        domainsEl.textContent = domains;
+
+        const requestsEl = document.createElement('div');
+        requestsEl.className = 'count';
+        requestsEl.textContent = requests;
+
+        row.append(nameEl, domainsEl, requestsEl);
+        table.appendChild(row);
+    }
+}
+
+/**
  * Derives available filter options from the current scan's requests.
  * Category/method/type are data-driven since they vary per scan;
  * party/tracker are always both possible values regardless of data.
@@ -214,7 +255,6 @@ function buildFilterOptions(requests) {
     return {
         category: [...categories],
         party: ["first-party", "third-party"],
-        tracker: ["tracker", "nontracker"],
         method: [...methods],
         type: [...types]
     };
@@ -420,6 +460,7 @@ function renderResults(data) {
     applyFiltersAndRender();
     renderStats();
     renderBreakdown(data.category_counts);
+    renderEntitySummary(data.entity_counts);
 }
 
 /**
