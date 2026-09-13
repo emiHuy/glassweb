@@ -1,18 +1,12 @@
 # backend/main.py
 """
-Generates a static, printable HTML scan report for PDF export.
+Generates a self-contained, printable HTML scan report for PDF export.
 
-This module provides:
-- Report styling (REPORT_CSS) and category display styles
-  (CATEGORY_STYLE / FALLBACK_STYLE), separate from the web app's own
-  styles.css since the PDF is rendered independently via Playwright.
-- build_report_html(), which turns a completed scan's summarized data
-  into a self-contained HTML document, later converted to PDF via
-  Playwright's page.pdf().
+Provides report-specific styling and build_report_html(), which converts
+summarized scan data into HTML for Playwright PDF rendering.
 
-All scanned-page-derived values (domains, entities, resource types,
-methods) are escaped before being embedded in the returned HTML, since
-they originate from arbitrary, unvetted websites.
+All scan-derived values are HTML-escaped before embedding, as they originate
+from arbitrary websites.
 """
 
 import html

@@ -1,17 +1,11 @@
 # backend/tracker.py
 """
-Utilities for classifying network requests against the Disconnect.me tracker
-dataset, determining first-/third-party status, and summarizing a scan's
-requests into aggregate counts.
+Utilities for classifying network requests using the Disconnect.me tracker
+dataset and summarizing scan results.
 
-This module provides helpers to:
-- Load and flatten tracker data from the bundled services.json dataset.
-- Extract hostnames from request URLs.
-- Match domains, including parent-domain and wildcard-subdomain matches.
-- Classify requests as first-party or third-party against the scanned
-  site's registrable domain.
-- Summarize captured requests by tracker status, category, party, and
-  entity for use in both the web report and the PDF export.
+Provides helpers for loading tracker data, extracting and matching hostnames,
+classifying first-/third-party requests, and aggregating results by tracker
+status, category, party, and entity.
 """
 
 import json
