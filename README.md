@@ -9,13 +9,15 @@ glassweb/
 |   ├── data/
 |   |   └── services.json
 │   ├── config.py
-│   ├── helpers.py
 │   ├── main.py
+│   ├── report.py
+│   ├── tracker.py
 │   └── requirements.txt
 ├── frontend/
 |   ├── glassweb-logo.ico
 |   ├── index.html
-|   ├── script.js
+|   ├── app.js
+|   ├── render.js
 │   └── styles.css
 ├── .gitignore
 ├── docker-compose.yml
