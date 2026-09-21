@@ -126,10 +126,109 @@ export function renderFilterOptions(groupKey, options, selectedSet, labels, onTo
 }
 
 /**
+ * Formats a request's raw POST body for display. 
+ * Possible post data formats: no body, "[binary data, N bytes]", text
+ * @param {string|null} raw - req.post_data as sent by the backend.
+ * @returns {string} Text ready to drop into the panel.
+ */
+function formatPostData(raw) {
+    if (raw.startsWith('[binary data')) {
+        return raw;
+    }
+    
+    try {
+        return JSON.stringify(JSON.parse(raw), null, 2);
+    } catch {
+        return raw;
+    }
+}
+
+/**
+ * Highlights flagged query-param name=value pairs within a URL string as
+ * inline HTML.
+ * @param {string} urlStr - The full request URL.
+ * @param {Array<string>} flaggedParams - Param names already identified as tracking params.
+ * @returns {string} HTML string with flagged params wrapped in a highlight span.
+ */
+function highlightUrl(urlStr, flaggedParams) {
+    if (flaggedParams.length === 0) return urlStr;
+    let out = urlStr;
+    flaggedParams.forEach(p => {
+        const re = new RegExp(`(${p}=[^&]*)`, 'g');
+        out = out.replace(re, '§§$1§§');
+    });
+    return out.split('§§').map((seg, i) =>
+        i % 2 === 1 ? `<span class="param-flag">${seg}</span>` : seg
+    ).join('');
+}
+
+/**
+ * Fills and opens the request detail side panel for a single request.
+ * @param {Object} req - The request to display.
+ */
+export function renderRequestDetail(req) {
+    const { color, label } = getCategoryInfo(req.classification.category);
+    const domain = new URL(req.url).hostname;
+ 
+    document.getElementById('detail-accent').style.background = color;
+    document.getElementById('detail-domain').textContent = domain;
+    document.getElementById('detail-entity').textContent = req.classification.entity || 'No known entity';
+ 
+    document.getElementById('detail-badges').innerHTML = `
+        <div class="badge ${req.party === 'third-party' ? 'third-party' : ''}">${req.party}</div>
+        <div class="badge"><div class="dot" style="background:${color};"></div>${label}</div>
+    `;
+ 
+    document.getElementById('method-val').textContent = req.method;
+    document.getElementById('type-val').textContent = req.resource_type;
+    document.getElementById('party-val').textContent = req.party === 'first-party' ? 'First-party' : 'Third-party';
+    document.getElementById('url-val').innerHTML = highlightUrl(req.url, req.tracking_params);
+    document.getElementById('category-val').textContent = label;
+    document.getElementById('entity-val').textContent = req.classification.entity || '—';
+ 
+    const signalsEl = document.getElementById('signals');
+    signalsEl.innerHTML = req.tracking_params.length > 0
+        ? `<div class="signal-row">
+             <div class="signal-icon flagged">!</div>
+             <div class="signal-text">
+               <b>${req.tracking_params.length} tracking parameter${req.tracking_params.length > 1 ? 's' : ''} in URL</b>
+               <div class="sub">${req.tracking_params.join(', ')} — identifies you or your session to this domain</div>
+             </div>
+           </div>`
+        : `<div class="signal-row">
+             <div class="signal-icon clear">&#10003;</div>
+             <div class="signal-text">
+               <b>No tracking parameters detected</b>
+               <div class="sub">URL doesn't carry any known tracking IDs</div>
+             </div>
+           </div>`;
+ 
+    const postDataSection = document.getElementById('post-data-section');
+    const postDataEl = document.getElementById('post-data');
+    if (req.post_data) {
+        postDataSection.style.display = '';
+        postDataEl.textContent = formatPostData(req.post_data);
+    } else {
+        postDataSection.style.display = 'none';
+    }
+
+    document.getElementById('scrim').classList.add('open');
+    document.getElementById('detail-panel').classList.add('open');
+}
+
+/**
+ * Closes the request detail panel.
+ */
+export function closeRequestDetail() {
+    document.getElementById('scrim').classList.remove('open');
+    document.getElementById('detail-panel').classList.remove('open');
+}
+ 
+/**
  * Populates the network request table, sorted alphabetically by tracker category.
  * @param {Array<Object>} networkRequests - List of captured HTTP requests.
  */
-export function renderRequestTable(networkRequests) {
+export function renderRequestTable(networkRequests, onRowClick, selectedRequest) {
     const table = document.getElementById('req-table');
     
     // Clear existing rows except the table header
@@ -143,7 +242,10 @@ export function renderRequestTable(networkRequests) {
         const partyLabel = req.party === "first-party" ? "First" : "Third";
 
         const row = document.createElement('div');
-        row.className = 'req-row' + (isUnclassified ? ' unclassified' : '');
+        row.className = 'req-row' 
+            + (isUnclassified ? ' unclassified' : '')
+            + (req === selectedRequest ? ' selected' : '');
+        row.addEventListener('click', () => onRowClick(req));
 
         const accent = document.createElement('div');
         accent.className = 'req-accent';
