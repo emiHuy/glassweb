@@ -11,6 +11,7 @@ glassweb/
 │   ├── config.py
 │   ├── main.py
 │   ├── report.py
+│   ├── request_fields.py
 │   ├── tracker.py
 │   └── requirements.txt
 ├── frontend/
@@ -36,6 +37,7 @@ glassweb/
 * **Frontend (`/frontend`):** Served via Nginx. Loads a static web page that pings the backend service to verify live cross-container communication.
    * A URL input triggers `/scan` and renders the results.
    * URLs typed without a scheme (e.g. `example.com`) are automatically normalized to `https://` before scanning.
+   * Clicking a row in the request table opens a detail panel with that request's full URL, classification, POST body, and tracking signals.
    * An "About trackers" panel explains all tracker categories from the dataset, each with its own color and plain-language description.
    * A GitHub link in the header points back to this repo.
    * A failed scan (e.g. a timeout) shows a plain-language error message with an optional, collapsible technical-details section containing the actual caught error, rather than failing with no visible feedback.
@@ -50,6 +52,8 @@ glassweb/
 * **Large or slow-loading pages** may still exceed the navigation timeout on especially heavy pages. The timeout itself is configurable via `GLASSWEB_NAV_TIMEOUT_MS` (default 45s).
 * **Dynamic, continuously-active pages** (polling, streaming, background calls) are only captured for a fixed post-load observation window (default 3s, configurable via `GLASSWEB_POST_LOAD_WAIT_MS`) before the browser closes — not their full ongoing behavior.
 * **Repeated domains** currently show as individual rows rather than being grouped for a page that calls the same tracker many times
+* **Binary POST bodies** (images, fonts, protobuf) show only as a size marker, not decoded content.
+
 ---
 
 ## Data Sources

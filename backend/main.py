@@ -11,6 +11,7 @@ from playwright.async_api import async_playwright, Request
 
 from config import NAV_TIMEOUT_MS, POST_LOAD_WAIT_MS
 from report import build_report_html
+from request_fields import get_post_data, get_tracking_params
 from tracker import (
     load_tracker_data, 
     extract_domain, 
@@ -90,6 +91,9 @@ async def scan(url: str) -> dict:
             "method": req.method,
             "is_navigation_request": req.is_navigation_request(),
             "classification": classification,
+            "headers": dict(req.headers),
+            "post_data": get_post_data(req),
+            "tracking_params": get_tracking_params(req.url),
         }
         network_requests.append(req_info)
 

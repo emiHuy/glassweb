@@ -9,6 +9,8 @@
 import {
     renderFilterOptions,
     renderRequestTable,
+    renderRequestDetail,
+    closeRequestDetail,
     renderUrls,
     renderStats,
     renderBreakdown,
@@ -31,11 +33,15 @@ const FILTER_GROUPS = {
     type: { selected: new Set(), labels: {} }
 };
 
+// Query params that carry identifying/tracking info.
+const TRACKING_PARAMS = ["fbclid", "gclid", "msclkid", "_ga", "utm_source", "utm_medium", "utm_campaign"];
+
 // Table sort state. Defaults to the original category sort for continuity.
 let sortKey = 'classification.category';
 let sortDir = 1;
 
-let lastScanData = null;  // most recent successful scan's data
+let lastScanData = null;       // most recent successful scan's data
+let selectedRequest = null; // url of the request currently open in the detail panel, if any
 
 /**
  * Updates the UI layout state based on application flow (scanning, results, or error).
@@ -145,6 +151,13 @@ function buildFilterPanels(requests) {
     });
 }
 
+/**
+ * Filters lastScanData's requests against the active search text and all
+ * four filter groups (category, party, method, type), then sorts the
+ * result by the current sortKey/sortDir.
+ * @returns {Array<Object>} The visible, sorted requests. Empty if no scan
+ *   has completed yet.
+ */
 function getVisibleRequests() {
     if (!lastScanData) return [];
     const search = document.getElementById('filter-search').value.toLowerCase();
@@ -169,6 +182,26 @@ function getVisibleRequests() {
         const bv = sortKey.split('.').reduce((o, k) => o?.[k], b) ?? '';
         return String(av).localeCompare(String(bv)) * sortDir;
     });
+}
+
+/**
+ * Opens the detail panel for a clicked request and re-renders the table so
+ * that row picks up the "selected" highlight.
+ * @param {Object} req - The clicked request's data.
+ */
+function openRequestDetail(req) {
+    selectedRequest = req;
+    renderRequestDetail(req);
+    applyFiltersAndRender();
+}
+ 
+/**
+ * Closes the detail panel and clears the row highlight.
+ */
+function closeRequestDetailPanel() {
+    selectedRequest = null;
+    closeRequestDetail();
+    applyFiltersAndRender();
 }
 
 /**
@@ -212,7 +245,7 @@ function toggleFilterPanel(groupKey) {
  * scan and are not affected by filtering/sorting.
  */
 function applyFiltersAndRender() {
-    renderRequestTable(getVisibleRequests());
+    renderRequestTable(getVisibleRequests(), openRequestDetail, selectedRequest);
 }
 
 /**
@@ -352,3 +385,5 @@ document.getElementById('error-detail-toggle').addEventListener('click', () => {
 });
 document.getElementById('export-json').addEventListener('click', exportJSON);
 document.getElementById('export-pdf').addEventListener('click', exportPDF);
+document.getElementById('detail-close').addEventListener('click', closeRequestDetailPanel);
+document.getElementById('scrim').addEventListener('click', closeRequestDetailPanel);
