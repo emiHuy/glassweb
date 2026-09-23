@@ -334,5 +334,22 @@ export function renderEntitySummary(entityCounts) {
 export function renderError(err) {
     const detailEl = document.getElementById('error-detail');
     detailEl.textContent = err.message;
-    detailEl.classList.remove('open');
+}
+
+/**
+ * Displays an error message to the user.
+ * @param {Error} detail - The message to display.
+ */
+export function renderRestoreError(body, detail) {
+    document.getElementById('restore-error-body').textContent = body;
+    document.getElementById('restore-error-detail').textContent = detail;
+    document.getElementById('restore-error-block').style.display = 'block';
+}
+
+/**
+ * Hides the restore panel's inline error, if shown.
+ */
+export function clearRestoreError() {
+    document.querySelector('[data-mode-panel="restore"] .error-block').style.display = 'none';
+    document.getElementById('restore-error-block').style.display = 'none';
 }

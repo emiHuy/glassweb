@@ -16,6 +16,8 @@ import {
     renderBreakdown,
     renderEntitySummary,
     renderError,
+    renderRestoreError,
+    clearRestoreError
 } from './render.js';
 
 const BASE_URL = 'http://localhost:8000';
@@ -33,8 +35,9 @@ const FILTER_GROUPS = {
     type: { selected: new Set(), labels: {} }
 };
 
-// Query params that carry identifying/tracking info.
-const TRACKING_PARAMS = ["fbclid", "gclid", "msclkid", "_ga", "utm_source", "utm_medium", "utm_campaign"];
+// Fields a restored file must have to be treated as a real glassweb scan
+// export, rather than some arbitrary JSON someone happened to drop.
+const REQUIRED_SCAN_FIELDS = ['url', 'network_requests', 'category_counts', 'party_counts', 'network_requests_count', 'tracker_count'];
 
 // Table sort state. Defaults to the original category sort for continuity.
 let sortKey = 'classification.category';
@@ -274,6 +277,70 @@ function toggleInfo(open) {
 }
 
 /**
+ * Checks that a parsed JSON object has the shape of a real glassweb scan
+ * export, not just any JSON file someone happened to drop.
+ * @param {*} data - The parsed JSON.
+ * @returns {string|null} A description of what's wrong, or null if valid.
+ */
+function validateScanShape(data) {
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+        return 'File does not contain a JSON object.';
+    }
+    const missing = REQUIRED_SCAN_FIELDS.filter(f => !(f in data));
+    if (missing.length > 0) {
+        return `Missing expected field(s): ${missing.join(', ')}`;
+    }
+    if (!Array.isArray(data.network_requests)) {
+        return '"network_requests" is not a list.';
+    }
+    return null;
+}
+
+/**
+ * Reads, validates, and renders a previously-exported scan.json file.
+ * @param {File} file - The selected or dropped file.
+ */
+function handleRestoreFile(file) {
+    if (!file) {
+        return;
+    }
+    clearRestoreError();
+ 
+    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+        renderRestoreError(
+            'Restore only works with a scan.json file previously downloaded from Glassweb\'s "Save as JSON" button.',
+            `Selected file: ${file.name} (${file.type || 'unknown type'})`
+        );
+        return;
+    }
+ 
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        let data;
+        try {
+            data = JSON.parse(e.target.result);
+        } catch (err) {
+            renderRestoreError("The file isn't valid JSON — it may be corrupted or incomplete.", err.message);
+            return;
+        }
+ 
+        const validationError = validateScanShape(data);
+        if (validationError) {
+            renderRestoreError('The file is valid JSON, but not in the shape Glassweb exports produce.', validationError);
+            return;
+        }
+ 
+        lastScanData = data;
+        renderResults(data);
+        setState(STATE.RESULTS);
+    };
+    reader.onerror = () => {
+        renderRestoreError("Something went wrong while reading it from disk.", String(reader.error));
+    };
+    reader.readAsText(file);
+}
+
+/**
  * Triggers a browser download of the last scan data as a formatted JSON file.
  * The filename includes the current date (YYYY-MM-DD).
  */
@@ -337,6 +404,31 @@ async function exportPDF() {
     }
 }
 
+// --- Mode toggle ---
+document.querySelectorAll('.mode-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelector(`[data-mode-panel="${tab.dataset.mode}"]`).classList.add('active');
+    });
+});
+
+// --- Dropzone ---
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+ 
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => handleRestoreFile(e.target.files[0]));
+ 
+['dragenter', 'dragover'].forEach(evt =>
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); })
+);
+['dragleave', 'drop'].forEach(evt =>
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('drag-over'); })
+);
+dropzone.addEventListener('drop', (e) => handleRestoreFile(e.dataTransfer.files[0]));
+
 // --- Filter bar wiring ---
 document.getElementById('filter-search').addEventListener('input', applyFiltersAndRender);
 document.getElementById('filter-clear-btn').addEventListener('click', () => {
@@ -382,6 +474,9 @@ document.getElementById('info-btn').addEventListener('click', () => toggleInfo(t
 document.getElementById('scan-btn').addEventListener('click', runScan);
 document.getElementById('error-detail-toggle').addEventListener('click', () => {
     document.getElementById('error-detail').classList.toggle('open');
+});
+document.getElementById('restore-error-detail-toggle').addEventListener('click', () => {
+    document.getElementById('restore-error-detail').classList.toggle('open');
 });
 document.getElementById('export-json').addEventListener('click', exportJSON);
 document.getElementById('export-pdf').addEventListener('click', exportPDF);

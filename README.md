@@ -37,6 +37,7 @@ glassweb/
 * **Frontend (`/frontend`):** Served via Nginx. Loads a static web page that pings the backend service to verify live cross-container communication.
    * A URL input triggers `/scan` and renders the results.
    * URLs typed without a scheme (e.g. `example.com`) are automatically normalized to `https://` before scanning.
+   * A "Restore a scan" mode reopens a previously exported scan.json file without re-scanning.
    * Clicking a row in the request table opens a detail panel with that request's full URL, classification, POST body, and tracking signals.
    * An "About trackers" panel explains all tracker categories from the dataset, each with its own color and plain-language description.
    * A GitHub link in the header points back to this repo.
