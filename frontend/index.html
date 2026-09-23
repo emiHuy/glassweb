@@ -149,27 +149,59 @@
             <div class="main-heading-sub mono">/ network request analyzer</div>
         </div>
 
-        <div class="input-container">
-            <div class="scanline"></div>
-            <p class="input-label">
-                Enter a URL. Glassweb renders the page in a real browser, captures every outgoing request it makes while loading, and checks 
-                each one against a known tracker dataset, so you can see who a page talks to before you trust it, not just what it shows you.
-            </p>
-            <div class="input-box">
-                <input type="text" id="url-input" placeholder="https://example.com">
-                <button id="scan-btn">Scan</button>
+        <div class="mode-toggle" role="tablist">
+            <button class="mode-tab active" data-mode="scan">Scan a URL</button>
+            <button class="mode-tab" data-mode="restore">Restore a scan</button>
+        </div>
+
+        <div class="mode-panel active" data-mode-panel="scan">
+            <div class="input-container">
+                <div class="scanline"></div>
+                <p class="input-label">
+                    Enter a URL. Glassweb renders the page in a real browser, captures every outgoing request it makes while loading, and checks 
+                    each one against a known tracker dataset, so you can see who a page talks to before you trust it, not just what it shows you.
+                </p>
+                <div class="input-box">
+                    <input type="text" id="url-input" placeholder="https://example.com">
+                    <button id="scan-btn">Scan</button>
+                </div>
+                <div class="status-line mono">rendering page · capturing requests · classifying domains</div>
+                <div class="error-block">
+                    <div class="error-head">
+                        <div class="error-icon">⚠</div>
+                        <div>
+                            <p class="error-title">Couldn't finish scanning this page.</p>
+                            <p class="error-body">
+                                It may be too large, slow to load, or blocking automated browsers. You can try again, or scan a different URL.
+                            </p>
+                            <button class="error-detail-toggle" id="error-detail-toggle">Technical details</button>
+                            <div class="error-detail mono" id="error-detail"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="status-line mono">rendering page · capturing requests · classifying domains</div>
-            <div class="error-block">
+        </div>
+        
+        <div class="mode-panel" data-mode-panel="restore">
+            <div class="dropzone" id="dropzone">
+                <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <div class="dropzone-title">Drop a saved scan.json here</div>
+                <div class="dropzone-sub">
+                    or&nbsp;
+                    <span class="browse-link">browse for a file</span>
+                </div>
+                <input type="file" id="file-input" accept=".json,application/json">
+            </div>
+            <div class="error-block" id="restore-error-block">
                 <div class="error-head">
                     <div class="error-icon">⚠</div>
                     <div>
-                        <p class="error-title">Couldn't finish scanning this page.</p>
-                        <p class="error-body">
-                            It may be too large, slow to load, or blocking automated browsers. You can try again, or scan a different URL.
-                        </p>
-                        <button class="error-detail-toggle" id="error-detail-toggle">Technical details</button>
-                        <div class="error-detail mono" id="error-detail"></div>
+                        <p class="error-title">Couldn't restore this file.</p>
+                        <p class="error-body" id="restore-error-body"></p>
+                        <button class="error-detail-toggle" id="restore-error-detail-toggle">Technical details</button>
+                        <pre class="error-detail mono" id="restore-error-detail"></pre>
                     </div>
                 </div>
             </div>
