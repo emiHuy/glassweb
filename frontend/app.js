@@ -15,6 +15,8 @@ import {
     renderStats,
     renderBreakdown,
     renderEntitySummary,
+    renderPagination,
+    renderRequestCount,
     renderError,
     renderRestoreError,
     clearRestoreError
@@ -42,6 +44,10 @@ const REQUIRED_SCAN_FIELDS = ['url', 'network_requests', 'category_counts', 'par
 // Table sort state. Defaults to the original category sort for continuity.
 let sortKey = 'classification.category';
 let sortDir = 1;
+
+// Pagination state.
+let currentPage = 1;
+const PAGE_SIZE = 20;
 
 let lastScanData = null;       // most recent successful scan's data
 let selectedRequest = null; // url of the request currently open in the detail panel, if any
@@ -248,7 +254,25 @@ function toggleFilterPanel(groupKey) {
  * scan and are not affected by filtering/sorting.
  */
 function applyFiltersAndRender() {
-    renderRequestTable(getVisibleRequests(), openRequestDetail, selectedRequest);
+    const visible = getVisibleRequests();
+    const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+    currentPage = Math.min(currentPage, totalPages);
+ 
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageRequests = visible.slice(start, start + PAGE_SIZE);
+    renderRequestTable(pageRequests, openRequestDetail, selectedRequest);
+    renderPagination(visible.length, currentPage, PAGE_SIZE, goToPage);
+    renderRequestCount(start + 1, Math.min(start + PAGE_SIZE, visible.length), visible.length, lastScanData.network_requests.length);
+}
+
+/**
+ * Jumps to a specific page and re-renders. Passed into renderPagination
+ * as its Prev/Next click callback.
+ * @param {number} page - The 1-indexed page to show.
+ */
+function goToPage(page) {
+    currentPage = page;
+    applyFiltersAndRender();
 }
 
 /**
