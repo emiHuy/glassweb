@@ -290,7 +290,7 @@ export function renderRequestTable(networkRequests, onRowClick, selectedRequest)
  * Renders a table of tracker entities by reach (domain and request counts),
  * in the order provided by the backend (pre-sorted by request count,
  * descending). Hides the section entirely if empty.
- * @param {Object} entityCounts - Map of entity name -> {domains, requests}.
+ * @param {Object} entityCounts - Map of entity name -> {domains, requests, get count, post count, categories}.
  */
 export function renderEntitySummary(entityCounts) {
     const table = document.getElementById('entity-table');
@@ -306,7 +306,7 @@ export function renderEntitySummary(entityCounts) {
     }
     table.style.display = '';
 
-    for (const [entity, { domains, requests }] of entries) {
+    for (const [entity, { domains, requests, get, post, categories }] of entries) {
         const row = document.createElement('div');
         row.className = 'entity-row';
 
@@ -322,8 +322,73 @@ export function renderEntitySummary(entityCounts) {
         requestsEl.className = 'count';
         requestsEl.textContent = requests;
 
-        row.append(nameEl, domainsEl, requestsEl);
+        const getRequestsEl = document.createElement('div');
+        getRequestsEl.className = 'count';
+        getRequestsEl.textContent = get;
+
+        const postRequestsEl = document.createElement('div');
+        postRequestsEl.className = 'count';
+        postRequestsEl.textContent = post;
+
+        const categoriesLabeled = categories.map(c => CATEGORY_INFO[c].label);
+        const categoriesEl = document.createElement('div');
+        categoriesEl.textContent = categoriesLabeled.join(", ");
+
+        row.append(nameEl, domainsEl, requestsEl, getRequestsEl, postRequestsEl, categoriesEl);
         table.appendChild(row);
+    }
+}
+
+/**
+ * Draws Prev/Next pagination controls with a "Page X of Y" indicator.
+ * Hides itself entirely when everything fits on one page.
+ * @param {number} totalItems - Total filtered/sorted request count.
+ * @param {number} currentPage - The 1-indexed page currently shown.
+ * @param {number} pageSize - Requests per page.
+ * @param {(page: number) => void} onPageChange - Called with the target page.
+ */
+export function renderPagination(totalItems, currentPage, pageSize, onPageChange) {
+    const el = document.getElementById('pagination');
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+ 
+    el.innerHTML = '';
+    if (totalPages <= 1) return;
+ 
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'page-btn';
+    prevBtn.textContent = '‹ Prev';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => onPageChange(currentPage - 1));
+ 
+    const label = document.createElement('span');
+    label.className = 'page-label mono';
+    label.textContent = `Page ${currentPage} of ${totalPages}`;
+ 
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'page-btn';
+    nextBtn.textContent = 'Next ›';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => onPageChange(currentPage + 1));
+ 
+    el.append(prevBtn, label, nextBtn);
+}
+ 
+/**
+ * Shows how many requests are visible on the current page, out of how many
+ * match the active filters, out of how many the scan captured in total.
+ * @param {number} pageStart - 1-indexed first row number shown on this page.
+ * @param {number} pageEnd - 1-indexed last row number shown on this page.
+ * @param {number} filteredCount - Total requests matching active filters.
+ * @param {number} totalCount - Total requests captured by the scan.
+ */
+export function renderRequestCount(pageStart, pageEnd, filteredCount, totalCount) {
+    const el = document.getElementById('request-count');
+    if (filteredCount === 0) {
+        el.textContent = 'No requests match the current filters';
+    } else if (filteredCount === totalCount) {
+        el.textContent = `Showing ${pageStart}–${pageEnd} of ${filteredCount}`;
+    } else {
+        el.textContent = `Showing ${pageStart}–${pageEnd} of ${filteredCount} (${totalCount} total)`;
     }
 }
 

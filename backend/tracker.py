@@ -68,25 +68,42 @@ def classify_party(scanned_url: str, request_url: str) -> str:
 
 def summarize_entities(network_requests: list) -> dict:
     """Aggregate request and domain counts per known tracker entity. Exclude requests with no entity (unclassified)"""
-    entity_domains = {}
-    entity_request_counts = {}
+    entities = {}
 
     for req in network_requests:
         entity = req["classification"].get("entity")
         if not entity:
             continue
-        domain = extract_domain(req["url"])
-        entity_domains.setdefault(entity, set()).add(domain)
-        entity_request_counts[entity] = entity_request_counts.get(entity, 0) + 1
 
-    entities = {}
-    for entity, domains in entity_domains.items():
-        entities[entity] = {
-            "domains": len(domains), 
-            "requests": entity_request_counts[entity]
+        e = entities.setdefault(entity, {
+            "domains": set(),
+            "requests": 0,
+            "get_count": 0,
+            "post_count": 0,
+            "categories": set()
+        })
+        e["domains"].add(extract_domain(req["url"]))
+        e["requests"] += 1
+
+        if req["method"] == "GET":
+            e["get_count"] += 1
+        elif req["method"] == "POST":
+            e["post_count"] += 1
+
+        if req["classification"]["category"] != UNCLASSIFIED["category"]: 
+            e["categories"].add(req["classification"]["category"])
+
+    summary = {}
+    for name, v in entities.items():
+        summary[name] = {
+            "domains": len(v["domains"]),
+            "requests": v["requests"],
+            "get": v["get_count"],
+            "post": v["post_count"],
+            "categories": v["categories"]
         }
 
-    return dict(sorted(entities.items(), key=lambda kv: -kv[1]["requests"]))
+    return dict(sorted(summary.items(), key=lambda item: item[1]["requests"], reverse=True))
 
 
 def summarize_requests(network_requests: list) -> dict:
